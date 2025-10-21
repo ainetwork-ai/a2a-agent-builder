@@ -17,6 +17,7 @@ import { classifyIntent, getThinkingMemory, getUserCaring, getLastIntent } from 
 import { getBaseUrl } from '@/lib/url';
 import { autoEvolveAfterConversation } from '@/lib/thinkingEvolution';
 import { callGPT5 } from '@/lib/gpt5Manager';
+import { Skill } from "@/types/agent";
 
 const AGENT_CARD_PATH = ".well-known/agent.json";
 
@@ -48,7 +49,7 @@ class DynamicAgentExecutor implements AgentExecutor {
     return `${this.agentId}-${contextId}`;
   }
 
-  private buildSystemPrompt(intent: string, thinking: string, caring: string): string {
+  private buildSystemPrompt(intent: string, thinking: string, caring: string, a2a?: string): string {
     let memoryContext = '';
     if (thinking && thinking !== '(empty)') {
       memoryContext = `\n\nContext for "${intent}":\n- What I know: ${thinking}\n- About you: ${caring}`;
@@ -63,7 +64,11 @@ RESPONSE STYLE:
 - Only give detailed explanations when specifically asked
 
 INTERNAL GUIDANCE (do not mention to user):${memoryContext}
-Use this knowledge naturally when relevant, but keep responses concise.`;
+Use this knowledge naturally when relevant, but keep responses concise.
+
+A2A GUIDANCE (If you need to collaborate with other agents, use the following information to help you):
+${a2a}
+`;
 
     return basePrompt;
   }
@@ -75,11 +80,25 @@ Use this knowledge naturally when relevant, but keep responses concise.`;
     const contextId = requestContext.contextId;
     const key = this.getContextKey(contextId);
     const incomingMessage = requestContext.userMessage;
+    console.log(`@@@@@@@@@@@@@ ${contextId} ${incomingMessage.metadata?.agentSkills}`);
 
     // Classify intent and get relevant memory
     let intent = 'general';
     let thinking = '';
     let caring = '';
+    let a2aPrompt = '';
+
+    if (incomingMessage.metadata?.agentSkills) {
+      const { agentSkills } = incomingMessage.metadata as { agentSkills: { name: string, skills: Skill[]}[] };
+      a2aPrompt = `
+        If you need to collaborate with other agents, use the following information to help you:
+        If the other agents can help you, you can mention the agent name and make a request to the other agent.
+        like this: "@{agent_name} - {request_to_help_agent_sentence}"
+
+        Agent Skill list:
+      `;
+      a2aPrompt += agentSkills.map(agent => `${agent.name}: [${agent.skills.map(skill => `"${skill.name}: ${skill.description}"`).join(', ')}]`).join('\n');
+    }
 
     if (incomingMessage && this.modelProvider === 'gemini') {
       try {
@@ -129,7 +148,8 @@ Use this knowledge naturally when relevant, but keep responses concise.`;
     // Initialize history with system prompt if needed
     if (!DynamicAgentExecutor.historyStore[key]) {
       DynamicAgentExecutor.historyStore[key] = [];
-      const systemPrompt = this.buildSystemPrompt(intent, thinking, caring);
+      console.log("no history store");
+      const systemPrompt = this.buildSystemPrompt(intent, thinking, caring, a2aPrompt);
       const initialMessage: Message = {
         kind: "message",
         messageId: uuidv4(),
@@ -149,7 +169,8 @@ Use this knowledge naturally when relevant, but keep responses concise.`;
     try {
       if (this.modelProvider === 'gemini' && this.model) {
         // Convert history to GPT-5 message format
-        const systemPrompt = this.buildSystemPrompt(intent, thinking, caring);
+        console.log("building system prompt with gemini");
+        const systemPrompt = this.buildSystemPrompt(intent, thinking, caring, a2aPrompt);
         const gpt5Messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
           { role: "system", content: systemPrompt }
         ];
@@ -177,7 +198,7 @@ Use this knowledge naturally when relevant, but keep responses concise.`;
           parts: [{ kind: "text", text: responseText }],
           contextId,
           // Store intent in metadata (non-standard but works for our use case)
-          ...(intent && { metadata: { intent } } as Partial<Message>)
+          metadata: { intent, a2aPrompt }
         };
 
         history.push(responseMessage);
