@@ -32,7 +32,6 @@ export interface AgentBuilderForm {
   description: string;
   prompt: string;
   skills: Skill[];
-  tags: string[];
   modelProvider: 'gemini' | 'openai' | 'anthropic';
   modelName: string;
 }
