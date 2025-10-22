@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import EditAgentModal from './EditAgentModal';
 
 interface DeployedAgent {
   id: string;
@@ -21,6 +22,7 @@ interface DeployedAgent {
 
 export default function DeployedAgents() {
   const [agents, setAgents] = useState<DeployedAgent[]>([]);
+  const [editingAgent, setEditingAgent] = useState<DeployedAgent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -177,6 +179,12 @@ export default function DeployedAgents() {
                     📋 Copy Agent URL
                   </button>
                   <button
+                    onClick={() => setEditingAgent(agent)}
+                    className="w-full py-2 bg-white border-2 border-blue-200 text-blue-600 rounded-lg hover:border-blue-400 hover:bg-blue-50 font-semibold transition-all duration-200 text-sm"
+                  >
+                    ✏️ Edit Agent
+                  </button>
+                  <button
                     onClick={() => deleteAgent(agent.id)}
                     className="w-full py-2 bg-white border-2 border-red-200 text-red-600 rounded-lg hover:border-red-400 hover:bg-red-50 font-semibold transition-all duration-200 text-sm"
                   >
@@ -198,6 +206,28 @@ export default function DeployedAgents() {
           </div>
         </div>
       </div>
+
+      {/* Edit Agent Modal */}
+      {editingAgent && (
+        <EditAgentModal
+          isOpen={!!editingAgent}
+          onClose={() => setEditingAgent(null)}
+          agent={editingAgent}
+          onSuccess={() => {
+            // Refresh agents list
+            const fetchAgents = async () => {
+              try {
+                const response = await fetch('/api/agents/list');
+                const data = await response.json();
+                setAgents(data.agents || []);
+              } catch (error) {
+                console.error('Failed to fetch agents:', error);
+              }
+            };
+            fetchAgents();
+          }}
+        />
+      )}
     </div>
   );
 }
