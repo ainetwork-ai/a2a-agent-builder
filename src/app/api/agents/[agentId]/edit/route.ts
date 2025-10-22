@@ -10,7 +10,7 @@ export async function PUT(
     const { agentId } = await params;
     const body = await request.json();
 
-    const { name, description, skills, modelProvider, modelName } = body;
+    const { name, description, url, skills, modelProvider, modelName } = body;
 
     // Get existing agent
     const agent = await getAgent(agentId);
@@ -22,7 +22,7 @@ export async function PUT(
     }
 
     // Validate required fields
-    if (!name || !description || !skills || !modelProvider || !modelName) {
+    if (!name || !description || !url || !skills || !modelProvider || !modelName) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -34,6 +34,7 @@ export async function PUT(
       ...agent.card,
       name,
       description,
+      url,
       skills: skills as Skill[],
     };
 

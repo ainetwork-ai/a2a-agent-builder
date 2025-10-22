@@ -10,6 +10,7 @@ interface EditAgentModalProps {
     id: string;
     name: string;
     description: string;
+    url: string;
     skills: Skill[];
     modelProvider: string;
     modelName: string;
@@ -21,6 +22,7 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
   const [formData, setFormData] = useState({
     name: agent.name,
     description: agent.description,
+    url: agent.url,
     skills: agent.skills,
     modelProvider: 'gemini' as const,
     modelName: 'gemini-2.5-flash',
@@ -36,6 +38,7 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
       setFormData({
         name: agent.name,
         description: agent.description,
+        url: agent.url,
         skills: agent.skills,
         modelProvider: 'gemini',
         modelName: 'gemini-2.5-flash',
@@ -166,6 +169,20 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none transition"
               placeholder="e.g., Socrates Web3 Tutor"
+            />
+          </div>
+
+          {/* URL */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Agent URL *
+            </label>
+            <input
+              type="text"
+              value={formData.url}
+              onChange={(e) => setFormData(prev => ({ ...prev, url: e.target.value }))}
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none transition"
+              placeholder="e.g., https://example.com/agents/my-agent"
             />
           </div>
 
