@@ -167,7 +167,7 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
               type="text"
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none transition"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none transition text-gray-900 placeholder:text-gray-400"
               placeholder="e.g., Socrates Web3 Tutor"
             />
           </div>
@@ -181,7 +181,7 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
               type="text"
               value={formData.url}
               onChange={(e) => setFormData(prev => ({ ...prev, url: e.target.value }))}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none transition"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none transition text-gray-900 placeholder:text-gray-400"
               placeholder="e.g., https://example.com/agents/my-agent"
             />
           </div>
@@ -194,7 +194,7 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
             <textarea
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none transition resize-none"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none transition resize-none text-gray-900 placeholder:text-gray-400"
               rows={3}
               placeholder="Describe what your agent does..."
             />
@@ -254,7 +254,7 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
                               setTagInput('');
                               setEditingSkillId(null);
                             }}
-                            className="w-20 px-2 py-0.5 border-0 border-b border-purple-300 rounded-none text-xs focus:border-purple-500 focus:outline-none"
+                            className="w-20 px-2 py-0.5 border-0 border-b border-purple-300 rounded-none text-xs focus:border-purple-500 focus:outline-none text-gray-900 placeholder:text-gray-400"
                             placeholder="tag"
                             autoFocus
                           />
@@ -286,14 +286,14 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
                   type="text"
                   value={newSkill.name}
                   onChange={(e) => setNewSkill({ ...newSkill, name: e.target.value })}
-                  className="w-full px-0 py-1 border-0 border-b border-transparent hover:border-gray-200 focus:border-purple-400 text-base font-semibold text-gray-800 focus:outline-none transition-colors bg-transparent"
+                  className="w-full px-0 py-1 border-0 border-b border-transparent hover:border-gray-200 focus:border-purple-400 text-base font-semibold text-gray-800 focus:outline-none transition-colors bg-transparent placeholder:text-gray-400"
                   placeholder="New skill name"
                 />
                 <input
                   type="text"
                   value={newSkill.description}
                   onChange={(e) => setNewSkill({ ...newSkill, description: e.target.value })}
-                  className="w-full px-0 py-1 border-0 text-sm text-gray-600 focus:outline-none bg-transparent"
+                  className="w-full px-0 py-1 border-0 text-sm text-gray-600 focus:outline-none bg-transparent placeholder:text-gray-400"
                   placeholder="Description"
                 />
 
@@ -341,7 +341,7 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
                         setTagInput('');
                         setEditingSkillId(null);
                       }}
-                      className="w-20 px-2 py-0.5 border-0 border-b border-purple-300 rounded-none text-xs focus:border-purple-500 focus:outline-none"
+                      className="w-20 px-2 py-0.5 border-0 border-b border-purple-300 rounded-none text-xs focus:border-purple-500 focus:outline-none text-gray-900 placeholder:text-gray-400"
                       placeholder="tag"
                       autoFocus
                     />

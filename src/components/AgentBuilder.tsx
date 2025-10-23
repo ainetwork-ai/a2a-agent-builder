@@ -282,7 +282,7 @@ export default function AgentBuilder() {
                       type="text"
                       value={generatedForm.name}
                       onChange={(e) => setGeneratedForm({ ...generatedForm, name: e.target.value })}
-                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none"
+                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none text-gray-900 placeholder:text-gray-400"
                     />
                   </div>
 
@@ -291,7 +291,7 @@ export default function AgentBuilder() {
                     <textarea
                       value={generatedForm.description}
                       onChange={(e) => setGeneratedForm({ ...generatedForm, description: e.target.value })}
-                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none resize-none"
+                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none resize-none text-gray-900 placeholder:text-gray-400"
                       rows={3}
                     />
                   </div>
@@ -312,7 +312,7 @@ export default function AgentBuilder() {
                                   );
                                   setGeneratedForm({ ...generatedForm, skills: updatedSkills });
                                 }}
-                                className="w-full px-0 py-1 border-0 border-b border-transparent hover:border-gray-200 focus:border-purple-400 text-base font-semibold text-gray-800 focus:outline-none transition-colors bg-transparent"
+                                className="w-full px-0 py-1 border-0 border-b border-transparent hover:border-gray-200 focus:border-purple-400 text-base font-semibold text-gray-800 focus:outline-none transition-colors bg-transparent placeholder:text-gray-400"
                                 placeholder="Skill name"
                               />
                               <input
@@ -324,7 +324,7 @@ export default function AgentBuilder() {
                                   );
                                   setGeneratedForm({ ...generatedForm, skills: updatedSkills });
                                 }}
-                                className="w-full px-0 py-1 border-0 text-sm text-gray-600 focus:outline-none bg-transparent"
+                                className="w-full px-0 py-1 border-0 text-sm text-gray-600 focus:outline-none bg-transparent placeholder:text-gray-400"
                                 placeholder="Description"
                               />
 
@@ -381,7 +381,7 @@ export default function AgentBuilder() {
                                       setTag('');
                                       setEditingSkillId(null);
                                     }}
-                                    className="w-20 px-2 py-0.5 border-0 border-b border-purple-300 rounded-none text-xs focus:border-purple-500 focus:outline-none"
+                                    className="w-20 px-2 py-0.5 border-0 border-b border-purple-300 rounded-none text-xs focus:border-purple-500 focus:outline-none text-gray-900 placeholder:text-gray-400"
                                     placeholder="tag"
                                     autoFocus
                                   />
@@ -416,14 +416,14 @@ export default function AgentBuilder() {
                           type="text"
                           value={skill.name}
                           onChange={(e) => setSkill({ ...skill, name: e.target.value })}
-                          className="w-full px-0 py-1 border-0 border-b border-transparent hover:border-gray-200 focus:border-purple-400 text-base font-semibold text-gray-800 focus:outline-none transition-colors bg-transparent"
+                          className="w-full px-0 py-1 border-0 border-b border-transparent hover:border-gray-200 focus:border-purple-400 text-base font-semibold text-gray-800 focus:outline-none transition-colors bg-transparent placeholder:text-gray-400"
                           placeholder="New skill name"
                         />
                         <input
                           type="text"
                           value={skill.description}
                           onChange={(e) => setSkill({ ...skill, description: e.target.value })}
-                          className="w-full px-0 py-1 border-0 text-sm text-gray-600 focus:outline-none bg-transparent"
+                          className="w-full px-0 py-1 border-0 text-sm text-gray-600 focus:outline-none bg-transparent placeholder:text-gray-400"
                           placeholder="Description"
                         />
 
@@ -471,7 +471,7 @@ export default function AgentBuilder() {
                                 setTag('');
                                 setEditingSkillId(null);
                               }}
-                              className="w-20 px-2 py-0.5 border-0 border-b border-purple-300 rounded-none text-xs focus:border-purple-500 focus:outline-none"
+                              className="w-20 px-2 py-0.5 border-0 border-b border-purple-300 rounded-none text-xs focus:border-purple-500 focus:outline-none text-gray-900 placeholder:text-gray-400"
                               placeholder="tag"
                               autoFocus
                             />
