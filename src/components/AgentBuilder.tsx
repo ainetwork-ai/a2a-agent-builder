@@ -196,7 +196,7 @@ export default function AgentBuilder() {
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              className="w-full p-4 border-2 border-gray-200 rounded-xl h-40 focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 resize-none"
+              className="w-full p-4 border-2 border-gray-200 rounded-xl h-40 focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 resize-none text-gray-900 placeholder:text-gray-400"
               placeholder="Example: Create an AI tutor that teaches Web3 and blockchain technology using the Socratic method. Guide students to find answers themselves and help them understand complex concepts step by step."
             />
           </div>
