@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AgentBuilderForm } from '@/types/agent';
-import { callLLM } from '@/lib/llmManager';
+import { callLLM, llmManager } from '@/lib/llmManager';
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,16 +10,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
     }
 
-    if (!process.env.LLM_API_URL || !process.env.LLM_MODEL) {
-      console.error('❌ LLM API not configured. Please set LLM_API_URL and LLM_MODEL in .env file');
+    if (!llmManager.isConfigured()) {
+      console.error('❌ LLM API not configured. Please check your environment variables');
       return NextResponse.json({ error: 'LLM API not configured' }, { status: 500 });
     }
 
     console.log('🚀 Generating agent with prompt:', prompt.substring(0, 50) + '...');
 
-    // Get model information from environment and extract model name from path
-    const modelPath = process.env.LLM_MODEL || 'gemma-3-27b-it';
-    const modelName = modelPath.split('/').pop() || 'gemma-3-27b-it';
+    // Get model name from llmManager
+    const modelName = llmManager.getModelName();
 
     const systemPrompt = `You are an AI agent designer. Based on the user's description, generate a complete agent configuration.
 
@@ -37,7 +36,7 @@ export async function POST(request: NextRequest) {
         }
       ],
       "tags": ["relevant", "tags", "for", "the", "agent"],
-      "modelProvider": "Google",
+      "modelProvider": "Azure",
       "modelName": "${modelName}"
     }
 
@@ -48,11 +47,11 @@ export async function POST(request: NextRequest) {
     - The prompt is detailed and defines the agent's personality, behavior, and expertise
     - Skills are relevant to the agent's purpose
     - Tags help categorize the agent (in English)
-    - Use "Google" as modelProvider and "${modelName}" as modelName`;
+    - Use "Azure" as modelProvider and "${modelName}" as modelName`;
 
     const text = await callLLM([
       { role: 'system', content: systemPrompt },
-      { role: 'user', content: `User request: ${prompt}` }
+      { role: 'user', content: `User request: ${prompt}` },
     ]);
     console.log('📝 LLM response received:', text.substring(0, 100) + '...');
 
