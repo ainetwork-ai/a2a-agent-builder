@@ -42,7 +42,7 @@ class DynamicAgentExecutor implements AgentExecutor {
     return `${this.agentId}-${contextId}`;
   }
 
-  private buildSystemPrompt(intent: string, thinking: string, caring: string): string {
+  private buildSystemPrompt(intent: string, thinking: string, caring: string, a2a?: string): string {
     let memoryContext = '';
     if (thinking && thinking !== '(empty)') {
       memoryContext = `\n\nContext for "${intent}":\n- What I know: ${thinking}\n- About you: ${caring}`;
@@ -57,7 +57,11 @@ RESPONSE STYLE:
 - Only give detailed explanations when specifically asked
 
 INTERNAL GUIDANCE (do not mention to user):${memoryContext}
-Use this knowledge naturally when relevant, but keep responses concise.`;
+Use this knowledge naturally when relevant, but keep responses concise.
+
+A2A GUIDANCE (If you need to collaborate with other agents, use the following information to help you):
+${a2a}
+`;
 
     return basePrompt;
   }
@@ -69,11 +73,25 @@ Use this knowledge naturally when relevant, but keep responses concise.`;
     const contextId = requestContext.contextId;
     const key = this.getContextKey(contextId);
     const incomingMessage = requestContext.userMessage;
+    console.log(`@@@@@@@@@@@@@ ${contextId} ${incomingMessage.metadata?.agentSkills}`);
 
     // Classify intent and get relevant memory
     let intent = 'general';
     let thinking = '';
     let caring = '';
+    let a2aPrompt = '';
+
+    if (incomingMessage.metadata?.agentSkills) {
+      const { agentSkills } = incomingMessage.metadata as { agentSkills: { name: string, skills: Skill[]}[] };
+      a2aPrompt = `
+        If you need to collaborate with other agents, use the following information to help you:
+        If the other agents can help you, you can mention the agent name and make a request to the other agent.
+        like this: "@{agent_name} - {request_to_help_agent_sentence}"
+
+        Agent Skill list:
+      `;
+      a2aPrompt += agentSkills.map(agent => `${agent.name}: [${agent.skills.map(skill => `"${skill.name}: ${skill.description}"`).join(', ')}]`).join('\n');
+    }
 
     if (incomingMessage) {
       try {
@@ -123,7 +141,8 @@ Use this knowledge naturally when relevant, but keep responses concise.`;
     // Initialize history with system prompt if needed
     if (!DynamicAgentExecutor.historyStore[key]) {
       DynamicAgentExecutor.historyStore[key] = [];
-      const systemPrompt = this.buildSystemPrompt(intent, thinking, caring);
+      console.log("no history store");
+      const systemPrompt = this.buildSystemPrompt(intent, thinking, caring, a2aPrompt);
       const initialMessage: Message = {
         kind: "message",
         messageId: uuidv4(),
