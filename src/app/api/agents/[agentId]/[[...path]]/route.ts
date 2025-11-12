@@ -16,6 +16,7 @@ import { classifyIntent, getThinkingMemory, getUserCaring, getLastIntent } from 
 import { getBaseUrl } from '@/lib/url';
 import { autoEvolveAfterConversation } from '@/lib/thinkingEvolution';
 import { callLLM } from '@/lib/llmManager';
+import type { Skill } from '@/types/agent';
 
 const AGENT_CARD_PATH = ".well-known/agent.json";
 
