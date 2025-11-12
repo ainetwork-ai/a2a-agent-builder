@@ -12,6 +12,7 @@ export async function GET() {
     url: agent.card.url,
     modelProvider: agent.modelProvider,
     modelName: agent.modelName,
+    prompt: agent.prompt,
     skills: agent.card.skills,
     deployed: true // All agents in the store are deployed
   }));

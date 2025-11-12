@@ -7,8 +7,12 @@ import Link from 'next/link';
 export default function AgentBuilder() {
   const [agents, setAgents] = useState<AgentConfig[]>([]);
   const [prompt, setPrompt] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [skill, setSkill] = useState({ name: '', description: '', tags: [] as string[] });
+  const [tag, setTag] = useState('');
   const [generatedForm, setGeneratedForm] = useState<AgentBuilderForm | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingSkillId, setEditingSkillId] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const generateAgentFromPrompt = async () => {
     if (!prompt.trim()) {
@@ -192,7 +196,7 @@ export default function AgentBuilder() {
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              className="w-full p-4 border-2 border-gray-200 rounded-xl h-40 focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 resize-none"
+              className="w-full p-4 border-2 border-gray-200 rounded-xl h-40 focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 resize-none text-gray-900 placeholder:text-gray-400"
               placeholder="Example: Create an AI tutor that teaches Web3 and blockchain technology using the Socratic method. Guide students to find answers themselves and help them understand complex concepts step by step."
             />
           </div>
@@ -216,49 +220,290 @@ export default function AgentBuilder() {
           {/* Generated Preview */}
           {generatedForm && (
             <div className="mt-6 p-6 bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl border-2 border-purple-200 animate-fade-in">
-              <h3 className="font-bold text-lg mb-4 text-purple-900 flex items-center gap-2">
-                ✨ Generated Agent
-              </h3>
-
-              <div className="space-y-4">
-                <div className="bg-white p-3 rounded-lg">
-                  <span className="text-xs font-semibold text-purple-600 uppercase">Name</span>
-                  <p className="font-bold text-gray-800 mt-1">{generatedForm.name}</p>
-                </div>
-
-                <div className="bg-white p-3 rounded-lg">
-                  <span className="text-xs font-semibold text-purple-600 uppercase">Description</span>
-                  <p className="text-gray-700 mt-1">{generatedForm.description}</p>
-                </div>
-
-                <div className="bg-white p-3 rounded-lg">
-                  <span className="text-xs font-semibold text-purple-600 uppercase">Skills</span>
-                  <div className="mt-2 space-y-2">
-                    {generatedForm.skills.map(skill => (
-                      <div key={skill.id} className="text-sm bg-purple-50 p-2 rounded">
-                        <span className="font-semibold text-purple-700">{skill.name}:</span>
-                        <span className="text-gray-700 ml-1">{skill.description}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="bg-white p-3 rounded-lg">
-                  <span className="text-xs font-semibold text-purple-600 uppercase">Tags</span>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {generatedForm.tags.map(tag => (
-                      <span key={tag} className="px-3 py-1 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-full text-xs font-semibold">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="bg-white p-3 rounded-lg">
-                  <span className="text-xs font-semibold text-purple-600 uppercase">AI Model</span>
-                  <p className="text-sm font-medium text-gray-800 mt-1">{generatedForm.modelProvider} / {generatedForm.modelName}</p>
-                </div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-lg text-purple-900 flex items-center gap-2">
+                  ✨ Generated Agent
+                </h3>
+                <button
+                  onClick={() => setIsEditing(!isEditing)}
+                  className="px-4 py-2 bg-white border-2 border-purple-300 text-purple-700 rounded-lg hover:bg-purple-50 font-semibold transition text-sm"
+                >
+                  {isEditing ? 'Preview' : 'Edit'}
+                </button>
               </div>
+
+              {!isEditing ? (
+                // Preview Mode
+                <div className="space-y-4">
+                  <div className="bg-white p-3 rounded-lg">
+                    <span className="text-xs font-semibold text-purple-600 uppercase">Name</span>
+                    <p className="font-bold text-gray-800 mt-1">{generatedForm.name}</p>
+                  </div>
+
+                  <div className="bg-white p-3 rounded-lg">
+                    <span className="text-xs font-semibold text-purple-600 uppercase">Description</span>
+                    <p className="text-gray-700 mt-1">{generatedForm.description}</p>
+                  </div>
+
+                  <div className="bg-white p-3 rounded-lg">
+                    <span className="text-xs font-semibold text-purple-600 uppercase">Skills</span>
+                    <div className="mt-2 space-y-2">
+                      {generatedForm.skills.map(skill => (
+                        <div key={skill.id} className="text-sm bg-purple-50 p-2 rounded">
+                          <div>
+                            <span className="font-semibold text-purple-700">{skill.name}:</span>
+                            <span className="text-gray-700 ml-1">{skill.description}</span>
+                          </div>
+                          {skill.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {skill.tags.map((tag, idx) => (
+                                <span key={idx} className="px-2 py-0.5 bg-purple-200 text-purple-700 rounded text-xs">
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-3 rounded-lg">
+                    <span className="text-xs font-semibold text-purple-600 uppercase">AI Model</span>
+                    <p className="text-sm font-medium text-gray-800 mt-1">{generatedForm.modelProvider} / {generatedForm.modelName}</p>
+                  </div>
+                </div>
+              ) : (
+                // Edit Mode
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-xs font-semibold text-purple-600 uppercase block mb-2">Name</label>
+                    <input
+                      type="text"
+                      value={generatedForm.name}
+                      onChange={(e) => setGeneratedForm({ ...generatedForm, name: e.target.value })}
+                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none text-gray-900 placeholder:text-gray-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold text-purple-600 uppercase block mb-2">Description</label>
+                    <textarea
+                      value={generatedForm.description}
+                      onChange={(e) => setGeneratedForm({ ...generatedForm, description: e.target.value })}
+                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none resize-none text-gray-900 placeholder:text-gray-400"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold text-purple-600 uppercase block mb-3">Skills</label>
+                    <div className="space-y-3 mb-4">
+                      {generatedForm.skills.map(skill => (
+                        <div key={skill.id} className="group p-4 bg-white rounded-lg border border-gray-200 hover:border-purple-300 hover:shadow-sm transition-all">
+                          <div className="flex items-start gap-3">
+                            <div className="flex-1 space-y-2">
+                              <input
+                                type="text"
+                                value={skill.name}
+                                onChange={(e) => {
+                                  const updatedSkills = generatedForm.skills.map(s =>
+                                    s.id === skill.id ? { ...s, name: e.target.value } : s
+                                  );
+                                  setGeneratedForm({ ...generatedForm, skills: updatedSkills });
+                                }}
+                                className="w-full px-0 py-1 border-0 border-b border-transparent hover:border-gray-200 focus:border-purple-400 text-base font-semibold text-gray-800 focus:outline-none transition-colors bg-transparent placeholder:text-gray-400"
+                                placeholder="Skill name"
+                              />
+                              <input
+                                type="text"
+                                value={skill.description}
+                                onChange={(e) => {
+                                  const updatedSkills = generatedForm.skills.map(s =>
+                                    s.id === skill.id ? { ...s, description: e.target.value } : s
+                                  );
+                                  setGeneratedForm({ ...generatedForm, skills: updatedSkills });
+                                }}
+                                className="w-full px-0 py-1 border-0 text-sm text-gray-600 focus:outline-none bg-transparent placeholder:text-gray-400"
+                                placeholder="Description"
+                              />
+
+                              {/* Skill Tags */}
+                              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                                {skill.tags.map((tag, idx) => (
+                                  <span
+                                    key={idx}
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 text-purple-700 rounded text-xs hover:bg-purple-100 transition-colors"
+                                  >
+                                    {tag}
+                                    <button
+                                      onClick={() => {
+                                        const updatedSkills = generatedForm.skills.map(s =>
+                                          s.id === skill.id ? { ...s, tags: s.tags.filter(t => t !== tag) } : s
+                                        );
+                                        setGeneratedForm({ ...generatedForm, skills: updatedSkills });
+                                      }}
+                                      className="hover:text-purple-900"
+                                    >
+                                      ✕
+                                    </button>
+                                  </span>
+                                ))}
+
+                                {editingSkillId === skill.id ? (
+                                  <input
+                                    type="text"
+                                    value={tag}
+                                    onChange={(e) => setTag(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        if (tag.trim()) {
+                                          const updatedSkills = generatedForm.skills.map(s =>
+                                            s.id === skill.id ? { ...s, tags: [...s.tags, tag.trim()] } : s
+                                          );
+                                          setGeneratedForm({ ...generatedForm, skills: updatedSkills });
+                                          setTag('');
+                                          setEditingSkillId(null);
+                                        }
+                                      } else if (e.key === 'Escape') {
+                                        setEditingSkillId(null);
+                                        setTag('');
+                                      }
+                                    }}
+                                    onBlur={() => {
+                                      if (tag.trim()) {
+                                        const updatedSkills = generatedForm.skills.map(s =>
+                                          s.id === skill.id ? { ...s, tags: [...s.tags, tag.trim()] } : s
+                                        );
+                                        setGeneratedForm({ ...generatedForm, skills: updatedSkills });
+                                      }
+                                      setTag('');
+                                      setEditingSkillId(null);
+                                    }}
+                                    className="w-20 px-2 py-0.5 border-0 border-b border-purple-300 rounded-none text-xs focus:border-purple-500 focus:outline-none text-gray-900 placeholder:text-gray-400"
+                                    placeholder="tag"
+                                    autoFocus
+                                  />
+                                ) : (
+                                  <button
+                                    onClick={() => setEditingSkillId(skill.id)}
+                                    className="px-2 py-0.5 text-gray-400 hover:text-purple-600 rounded text-xs transition-colors"
+                                  >
+                                    + tag
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => {
+                                const updatedSkills = generatedForm.skills.filter(s => s.id !== skill.id);
+                                setGeneratedForm({ ...generatedForm, skills: updatedSkills });
+                              }}
+                              className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-all"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Add New Skill */}
+                    <div className="group p-4 bg-gray-50 hover:bg-white rounded-lg border-2 border-dashed border-gray-300 hover:border-purple-300 transition-all">
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          value={skill.name}
+                          onChange={(e) => setSkill({ ...skill, name: e.target.value })}
+                          className="w-full px-0 py-1 border-0 border-b border-transparent hover:border-gray-200 focus:border-purple-400 text-base font-semibold text-gray-800 focus:outline-none transition-colors bg-transparent placeholder:text-gray-400"
+                          placeholder="New skill name"
+                        />
+                        <input
+                          type="text"
+                          value={skill.description}
+                          onChange={(e) => setSkill({ ...skill, description: e.target.value })}
+                          className="w-full px-0 py-1 border-0 text-sm text-gray-600 focus:outline-none bg-transparent placeholder:text-gray-400"
+                          placeholder="Description"
+                        />
+
+                        {/* Tags for new skill */}
+                        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                          {skill.tags.map((tag, idx) => (
+                            <span
+                              key={idx}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 text-purple-700 rounded text-xs"
+                            >
+                              {tag}
+                              <button
+                                onClick={() => {
+                                  setSkill({ ...skill, tags: skill.tags.filter(t => t !== tag) });
+                                }}
+                                className="hover:text-purple-900"
+                              >
+                                ✕
+                              </button>
+                            </span>
+                          ))}
+
+                          {editingSkillId === 'new-skill' ? (
+                            <input
+                              type="text"
+                              value={tag}
+                              onChange={(e) => setTag(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  if (tag.trim()) {
+                                    setSkill({ ...skill, tags: [...skill.tags, tag.trim()] });
+                                    setTag('');
+                                    setEditingSkillId(null);
+                                  }
+                                } else if (e.key === 'Escape') {
+                                  setEditingSkillId(null);
+                                  setTag('');
+                                }
+                              }}
+                              onBlur={() => {
+                                if (tag.trim()) {
+                                  setSkill({ ...skill, tags: [...skill.tags, tag.trim()] });
+                                }
+                                setTag('');
+                                setEditingSkillId(null);
+                              }}
+                              className="w-20 px-2 py-0.5 border-0 border-b border-purple-300 rounded-none text-xs focus:border-purple-500 focus:outline-none text-gray-900 placeholder:text-gray-400"
+                              placeholder="tag"
+                              autoFocus
+                            />
+                          ) : (
+                            <button
+                              onClick={() => setEditingSkillId('new-skill')}
+                              className="px-2 py-0.5 text-gray-400 hover:text-purple-600 rounded text-xs transition-colors"
+                            >
+                              + tag
+                            </button>
+                          )}
+                        </div>
+
+                        <button
+                          onClick={() => {
+                            if (skill.name && skill.description) {
+                              setGeneratedForm({
+                                ...generatedForm,
+                                skills: [...generatedForm.skills, { id: `skill-${Date.now()}`, ...skill }]
+                              });
+                              setSkill({ name: '', description: '', tags: [] });
+                            }
+                          }}
+                          className="mt-2 w-full py-2 text-purple-600 hover:text-purple-700 font-medium text-sm transition-colors"
+                        >
+                          + Add Skill
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <button
                 onClick={createAgent}
