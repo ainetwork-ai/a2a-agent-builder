@@ -17,6 +17,8 @@ export interface StoredAgent {
   prompt: string;
   modelProvider: string;
   modelName: string;
+  // Creator's wallet address (for ownership verification)
+  creator?: string;
   // Intent-based thinking: { [intent]: thinking }
   thinkingMemories?: Record<string, string>;
   // User-based caring: { [username]: caring }
@@ -40,6 +42,7 @@ export interface SerializableAgent {
   prompt: string;
   modelProvider: string;
   modelName: string;
+  creator?: string;
   thinkingMemories?: Record<string, string>;
   caringMemories?: Record<string, string>;
   intentPatterns?: Record<string, string[]>;
@@ -58,6 +61,7 @@ function toSerializable(agent: StoredAgent): SerializableAgent {
     prompt: agent.prompt,
     modelProvider: agent.modelProvider,
     modelName: agent.modelName,
+    creator: agent.creator,
     thinkingMemories: agent.thinkingMemories,
     caringMemories: agent.caringMemories,
     intentPatterns: agent.intentPatterns,
@@ -73,6 +77,7 @@ function toSerializable(agent: StoredAgent): SerializableAgent {
 function fromSerializable(data: SerializableAgent): StoredAgent {
   return {
     ...data,
+    creator: data.creator,
     thinkingMemories: data.thinkingMemories,
     caringMemories: data.caringMemories,
     intentPatterns: data.intentPatterns,

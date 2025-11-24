@@ -4,10 +4,12 @@ import { setAgent } from '@/lib/agentStore';
 import type { AgentCard } from "@a2a-js/sdk";
 export async function POST(request: NextRequest) {
   try {
-    const agentConfig: AgentConfig = await request.json();
+    const body = await request.json();
+    const agentConfig: AgentConfig = body.agentConfig || body;
+    const creatorAddress: string | undefined = body.creatorAddress;
     const agentId = agentConfig.id;
 
-    console.log('🚀 Deploying agent:', agentId);
+    console.log('🚀 Deploying agent:', agentId, 'Creator:', creatorAddress);
 
     const agentCard: AgentCard = {
       name: agentConfig.name,
@@ -28,6 +30,7 @@ export async function POST(request: NextRequest) {
       prompt: agentConfig.prompt,
       modelProvider: agentConfig.modelProvider,
       modelName: agentConfig.modelName,
+      creator: creatorAddress,
     });
 
     console.log('✅ Agent deployed successfully:', agentId);
