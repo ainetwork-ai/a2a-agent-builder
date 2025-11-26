@@ -22,7 +22,7 @@ export async function PUT(
     }
 
     // Verify creator ownership (skip check for agents without creator - legacy agents)
-    if (agent.creator && agent.creator !== address?.toLowerCase()) {
+    if (agent.creator && agent.creator !== address) {
       console.log('❌ Unauthorized edit attempt:', { creator: agent.creator, requester: address });
       return NextResponse.json(
         { error: 'Unauthorized: Only the creator can edit this agent' },
