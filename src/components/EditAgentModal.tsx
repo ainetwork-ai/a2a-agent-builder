@@ -132,7 +132,7 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
         },
         body: JSON.stringify({
           ...formData,
-          address: address.toLowerCase(),
+          address: address,
         }),
       });
 

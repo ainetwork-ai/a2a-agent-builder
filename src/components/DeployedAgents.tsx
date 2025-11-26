@@ -60,7 +60,7 @@ export default function DeployedAgents() {
       const response = await fetch(`/api/agents/${agentId}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address: address.toLowerCase() }),
+        body: JSON.stringify({ address: address }),
       });
 
       if (!response.ok) {
