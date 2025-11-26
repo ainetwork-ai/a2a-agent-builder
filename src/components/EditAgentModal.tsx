@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Skill } from '@/types/agent';
+import { useAccount } from 'wagmi';
 
 interface EditAgentModalProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ interface EditAgentModalProps {
 }
 
 export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: EditAgentModalProps) {
+  const { address } = useAccount();
   const [formData, setFormData] = useState({
     name: agent.name,
     description: agent.description,
@@ -116,6 +118,11 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
       return;
     }
 
+    if (!address) {
+      alert('⚠️ Please connect your wallet to edit the agent.');
+      return;
+    }
+
     setIsSaving(true);
     try {
       const response = await fetch(`/api/agents/${agent.id}/edit`, {
@@ -123,11 +130,15 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          address: address,
+        }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update agent');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update agent');
       }
 
       alert('✅ Agent updated successfully!');

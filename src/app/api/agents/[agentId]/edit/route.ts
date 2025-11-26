@@ -10,7 +10,7 @@ export async function PUT(
     const { agentId } = await params;
     const body = await request.json();
 
-    const { name, description, url, skills, modelProvider, modelName, prompt } = body;
+    const { name, description, url, skills, modelProvider, modelName, prompt, address } = body;
 
     // Get existing agent
     const agent = await getAgent(agentId);
@@ -18,6 +18,15 @@ export async function PUT(
       return NextResponse.json(
         { error: 'Agent not found' },
         { status: 404 }
+      );
+    }
+
+    // Verify creator ownership (skip check for agents without creator - legacy agents)
+    if (agent.creator && agent.creator !== address) {
+      console.log('❌ Unauthorized edit attempt:', { creator: agent.creator, requester: address });
+      return NextResponse.json(
+        { error: 'Unauthorized: Only the creator can edit this agent' },
+        { status: 403 }
       );
     }
 

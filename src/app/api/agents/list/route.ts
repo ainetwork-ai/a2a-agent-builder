@@ -14,7 +14,8 @@ export async function GET() {
     modelName: agent.modelName,
     prompt: agent.prompt,
     skills: agent.card.skills,
-    deployed: true // All agents in the store are deployed
+    deployed: true, // All agents in the store are deployed
+    creator: agent.creator // Include creator address for ownership verification
   }));
 
   console.log('📋 Listing agents:', agents.length);

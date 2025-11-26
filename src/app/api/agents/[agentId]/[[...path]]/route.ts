@@ -559,9 +559,22 @@ export async function DELETE(
   }
 
   try {
-    const exists = await hasAgent(agentId);
-    if (!exists) {
+    const agent = await getAgent(agentId);
+    if (!agent) {
       return NextResponse.json({ error: "Agent not found" }, { status: 404 });
+    }
+
+    // Get creator address from request body or query params
+    const body = await request.json().catch(() => ({}));
+    const requestAddress = body.address || request.nextUrl.searchParams.get('address');
+
+    // Verify creator ownership (skip check for agents without creator - legacy agents)
+    if (agent.creator && agent.creator !== requestAddress) {
+      console.log('❌ Unauthorized delete attempt:', { creator: agent.creator, requester: requestAddress });
+      return NextResponse.json(
+        { error: "Unauthorized: Only the creator can delete this agent" },
+        { status: 403 }
+      );
     }
 
     await deleteAgent(agentId);

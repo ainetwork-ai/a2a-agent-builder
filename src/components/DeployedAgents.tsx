@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import EditAgentModal from './EditAgentModal';
+import { WalletButton } from './WalletButton';
+import { useAccount } from 'wagmi';
 
 interface DeployedAgent {
   id: string;
@@ -19,9 +21,11 @@ interface DeployedAgent {
     tags: string[];
   }>;
   deployed: boolean;
+  creator?: string;
 }
 
 export default function DeployedAgents() {
+  const { address, isConnected } = useAccount();
   const [agents, setAgents] = useState<DeployedAgent[]>([]);
   const [editingAgent, setEditingAgent] = useState<DeployedAgent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,6 +47,11 @@ export default function DeployedAgents() {
   }, []);
 
   const deleteAgent = async (agentId: string) => {
+    if (!isConnected || !address) {
+      alert('⚠️ Please connect your wallet to delete an agent.');
+      return;
+    }
+
     if (!confirm('Are you sure you want to delete this agent? This action cannot be undone.')) {
       return;
     }
@@ -50,10 +59,13 @@ export default function DeployedAgents() {
     try {
       const response = await fetch(`/api/agents/${agentId}`, {
         method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address: address }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete agent');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete agent');
       }
 
       // Remove agent from list
@@ -61,8 +73,17 @@ export default function DeployedAgents() {
       alert('✅ Agent deleted successfully!');
     } catch (error) {
       console.error('Error deleting agent:', error);
-      alert('❌ Failed to delete agent. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`❌ ${errorMessage}`);
     }
+  };
+
+  // Check if current user owns the agent
+  const isOwner = (agent: DeployedAgent): boolean => {
+    if (!isConnected || !address || !agent.creator) {
+      return false; // If no wallet connected, no creator, or legacy agent
+    }
+    return agent.creator.toLowerCase() === address.toLowerCase();
   };
 
   return (
@@ -78,12 +99,15 @@ export default function DeployedAgents() {
               A2A Agent Hub
             </span>
           </div>
-          <Link
-            href="/builder"
-            className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition font-semibold shadow-md"
-          >
-            ✨ Create Agent
-          </Link>
+          <div className="flex items-center gap-3">
+            <WalletButton />
+            <Link
+              href="/builder"
+              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition font-semibold shadow-md"
+            >
+              ✨ Create Agent
+            </Link>
+          </div>
         </div>
       </nav>
 
@@ -169,28 +193,39 @@ export default function DeployedAgents() {
                   >
                     💬 Start Chat
                   </Link>
-                  <button
-                    onClick={() => {
-                      const agentCardUrl = `${agent.url}/.well-known/agent.json`;
-                      navigator.clipboard.writeText(agentCardUrl);
-                      alert('Agent Card URL copied to clipboard!');
-                    }}
-                    className="w-full py-2 bg-white border-2 border-gray-200 text-gray-700 rounded-lg hover:border-purple-300 hover:bg-purple-50 font-semibold transition-all duration-200 text-sm"
-                  >
-                    📋 Copy Agent URL
-                  </button>
-                  <button
-                    onClick={() => setEditingAgent(agent)}
-                    className="w-full py-2 bg-white border-2 border-blue-200 text-blue-600 rounded-lg hover:border-blue-400 hover:bg-blue-50 font-semibold transition-all duration-200 text-sm"
-                  >
-                    ✏️ Edit Agent
-                  </button>
-                  <button
-                    onClick={() => deleteAgent(agent.id)}
-                    className="w-full py-2 bg-white border-2 border-red-200 text-red-600 rounded-lg hover:border-red-400 hover:bg-red-50 font-semibold transition-all duration-200 text-sm"
-                  >
-                    🗑️ Delete Agent
-                  </button>
+                  {/* Only show Edit/Delete/Copy buttons to agent owners */}
+                  {isOwner(agent) && (
+                    <>
+                      <button
+                        onClick={() => {
+                          const agentCardUrl = `${agent.url}/.well-known/agent.json`;
+                          navigator.clipboard.writeText(agentCardUrl);
+                          alert('Agent Card URL copied to clipboard!');
+                        }}
+                        className="w-full py-2 bg-white border-2 border-gray-200 text-gray-700 rounded-lg hover:border-purple-300 hover:bg-purple-50 font-semibold transition-all duration-200 text-sm"
+                      >
+                        📋 Copy Agent URL
+                      </button>
+                      <button
+                        onClick={() => setEditingAgent(agent)}
+                        className="w-full py-2 bg-white border-2 border-blue-200 text-blue-600 rounded-lg hover:border-blue-400 hover:bg-blue-50 font-semibold transition-all duration-200 text-sm"
+                      >
+                        ✏️ Edit Agent
+                      </button>
+                      <button
+                        onClick={() => deleteAgent(agent.id)}
+                        className="w-full py-2 bg-white border-2 border-red-200 text-red-600 rounded-lg hover:border-red-400 hover:bg-red-50 font-semibold transition-all duration-200 text-sm"
+                      >
+                        🗑️ Delete Agent
+                      </button>
+                    </>
+                  )}
+                  {/* Show message for non-owners */}
+                  {!isOwner(agent) && agent.creator && (
+                    <div className="w-full py-2 text-center text-xs text-gray-500 italic">
+                      Connect wallet to edit/delete
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

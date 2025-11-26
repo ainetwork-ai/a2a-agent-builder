@@ -3,8 +3,11 @@
 import React, { useState } from 'react';
 import { AgentBuilderForm, AgentConfig } from '@/types/agent';
 import Link from 'next/link';
+import { WalletButton } from './WalletButton';
+import { useAccount } from 'wagmi';
 
 export default function AgentBuilder() {
+  const { address, isConnected } = useAccount();
   const [agents, setAgents] = useState<AgentConfig[]>([]);
   const [prompt, setPrompt] = useState('');
   const [skill, setSkill] = useState({ name: '', description: '', tags: [] as string[] });
@@ -122,11 +125,20 @@ export default function AgentBuilder() {
   };
 
   const deployAgent = async (agent: AgentConfig) => {
+    // Check wallet connection
+    if (!isConnected || !address) {
+      alert('⚠️ Please connect your wallet to deploy an agent.');
+      return;
+    }
+
     try {
       const response = await fetch('/api/deploy-agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(agent),
+        body: JSON.stringify({
+          agentConfig: agent,
+          creatorAddress: address,
+        }),
       });
 
       if (!response.ok) {
@@ -159,7 +171,8 @@ export default function AgentBuilder() {
             </div>
             <span className="font-bold text-gray-700 group-hover:text-purple-600 transition-colors">Home</span>
           </Link>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <WalletButton />
             <div className="px-4 py-2 bg-gradient-to-r from-purple-100 to-blue-100 rounded-lg">
               <span className="text-sm font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
                 A2A Protocol v0.3.0
