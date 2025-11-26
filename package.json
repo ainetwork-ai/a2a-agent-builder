@@ -24,6 +24,8 @@
     "openai": "^6.3.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "slugify": "^1.6.6",
+    "transliteration": "^2.3.5",
     "uuid": "^11.1.0",
     "viem": "^2.21.53",
     "wagmi": "^2.16.0",

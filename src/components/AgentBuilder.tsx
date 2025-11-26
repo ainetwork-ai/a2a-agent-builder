@@ -5,6 +5,8 @@ import { AgentBuilderForm, AgentConfig } from '@/types/agent';
 import Link from 'next/link';
 import { WalletButton } from './WalletButton';
 import { useAccount } from 'wagmi';
+import { transliterate } from 'transliteration';
+import slugify from 'slugify';
 
 export default function AgentBuilder() {
   const { address, isConnected } = useAccount();
@@ -58,12 +60,14 @@ export default function AgentBuilder() {
 
     // Convert agent name to meaningful English slug
     // Remove non-ASCII characters, convert to lowercase, replace spaces with hyphens
-    const agentSlug = generatedForm.name
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '') // Remove non-alphanumeric except spaces and hyphens
-      .replace(/\s+/g, '-') // Replace spaces with hyphens
-      .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
-      .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+    const rawName = generatedForm.name ?? '';
+    const romanized = transliterate(rawName);
+
+    const agentSlug = slugify(romanized, {
+      lower: true,
+      strict: true,
+      trim: true,
+    });
 
     // Add timestamp suffix to ensure uniqueness
     const agentId = `${agentSlug}-${Date.now()}`;
