@@ -193,19 +193,19 @@ export default function DeployedAgents() {
                   >
                     💬 Start Chat
                   </Link>
-                  <button
-                    onClick={() => {
-                      const agentCardUrl = `${agent.url}/.well-known/agent.json`;
-                      navigator.clipboard.writeText(agentCardUrl);
-                      alert('Agent Card URL copied to clipboard!');
-                    }}
-                    className="w-full py-2 bg-white border-2 border-gray-200 text-gray-700 rounded-lg hover:border-purple-300 hover:bg-purple-50 font-semibold transition-all duration-200 text-sm"
-                  >
-                    📋 Copy Agent URL
-                  </button>
-                  {/* Only show Edit/Delete buttons to agent owners */}
+                  {/* Only show Edit/Delete/Copy buttons to agent owners */}
                   {isOwner(agent) && (
                     <>
+                      <button
+                        onClick={() => {
+                          const agentCardUrl = `${agent.url}/.well-known/agent.json`;
+                          navigator.clipboard.writeText(agentCardUrl);
+                          alert('Agent Card URL copied to clipboard!');
+                        }}
+                        className="w-full py-2 bg-white border-2 border-gray-200 text-gray-700 rounded-lg hover:border-purple-300 hover:bg-purple-50 font-semibold transition-all duration-200 text-sm"
+                      >
+                        📋 Copy Agent URL
+                      </button>
                       <button
                         onClick={() => setEditingAgent(agent)}
                         className="w-full py-2 bg-white border-2 border-blue-200 text-blue-600 rounded-lg hover:border-blue-400 hover:bg-blue-50 font-semibold transition-all duration-200 text-sm"
