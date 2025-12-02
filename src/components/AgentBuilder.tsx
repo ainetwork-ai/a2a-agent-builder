@@ -18,6 +18,7 @@ export default function AgentBuilder() {
   const [isEditing, setIsEditing] = useState(false);
   const [editingSkillId, setEditingSkillId] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [deployedAgent, setDeployedAgent] = useState<{ url: string; cardUrl: string } | null>(null);
 
   const generateAgentFromPrompt = async () => {
     if (!prompt.trim()) {
@@ -156,7 +157,7 @@ export default function AgentBuilder() {
       ));
 
       const agentCardUrl = `${agent.url}/.well-known/agent.json`;
-      alert(`✅ Agent deployed successfully!\n\n🔗 Base URL: ${agent.url}\n📄 Agent Card: ${agentCardUrl}\n\nYou can now connect to this agent from other clients.`);
+      setDeployedAgent({ url: agent.url, cardUrl: agentCardUrl });
     } catch (error) {
       console.error('Error deploying agent:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -549,50 +550,52 @@ export default function AgentBuilder() {
             <div className="space-y-4">
               {agents.map(agent => (
                 <div key={agent.id} className="bg-white/90 backdrop-blur-sm p-4 sm:p-6 rounded-2xl shadow-xl border border-blue-100 hover:shadow-2xl hover:border-blue-300 transition-all duration-300">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-800 mb-1">{agent.name}</h3>
-                      <p className="text-gray-600 leading-relaxed">{agent.description}</p>
+                  <div className="flex items-start justify-between mb-4 gap-3">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-2">{agent.name}</h3>
+                      <p className="text-sm sm:text-base text-gray-600 leading-relaxed">{agent.description}</p>
                     </div>
-                    <div className={`px-3 py-1 rounded-full ${
+                    <div className={`px-2.5 sm:px-3 py-1 rounded-full flex-shrink-0 ${
                       agent.deployed
                         ? 'bg-gradient-to-br from-green-100 to-emerald-100'
                         : 'bg-gradient-to-br from-yellow-100 to-orange-100'
                     }`}>
-                      <span className={`text-xs font-bold ${
+                      <span className={`text-xs font-bold whitespace-nowrap ${
                         agent.deployed ? 'text-green-700' : 'text-orange-700'
                       }`}>
-                        {agent.deployed ? '✅ DEPLOYED' : '⚠️ NOT DEPLOYED'}
+                        {agent.deployed ? '✅ LIVE' : '⚠️ DRAFT'}
                       </span>
                     </div>
                   </div>
 
-                  <div className="space-y-2 text-sm mt-4 bg-gray-50 p-4 rounded-xl">
+                  <div className="space-y-2.5 mt-4 bg-gray-50 p-3 sm:p-4 rounded-xl">
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-gray-700">🧠 Model:</span>
-                      <span className="text-gray-600">{agent.modelProvider} / {agent.modelName}</span>
+                      <span className="font-semibold text-gray-700 text-xs sm:text-sm whitespace-nowrap">🧠 Model:</span>
+                      <span className="text-gray-600 text-xs sm:text-sm truncate">{agent.modelProvider} / {agent.modelName}</span>
                     </div>
                     <div className="flex items-start gap-2">
-                      <span className="font-semibold text-gray-700">⚡ Skills:</span>
-                      <span className="text-gray-600">{agent.skills.map(s => s.name).join(', ')}</span>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="flex items-start gap-2">
-                        <span className="font-semibold text-gray-700">🔗 Base URL:</span>
-                        <code className="flex-1 bg-white px-3 py-1.5 rounded-lg text-xs border border-gray-200 break-all">{agent.url}</code>
+                      <span className="font-semibold text-gray-700 text-xs sm:text-sm whitespace-nowrap">⚡ Skills:</span>
+                      <div className="flex flex-wrap gap-1">
+                        {agent.skills.map(s => (
+                          <span key={s.id} className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
+                            {s.name}
+                          </span>
+                        ))}
                       </div>
+                    </div>
+                    <div className="space-y-2 pt-1">
                       <div className="flex items-start gap-2">
-                        <span className="font-semibold text-gray-700">📄 Agent Card:</span>
-                        <code className="flex-1 bg-white px-3 py-1.5 rounded-lg text-xs border border-gray-200 break-all">{agent.url}/.well-known/agent.json</code>
+                        <span className="font-semibold text-gray-700 text-xs sm:text-sm whitespace-nowrap">🔗 URL:</span>
+                        <code className="flex-1 bg-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs border border-gray-200 break-all">{agent.url}</code>
                       </div>
                     </div>
                   </div>
 
-                  <div className="mt-5 flex flex-wrap gap-2">
+                  <div className="mt-4 sm:mt-5 flex flex-wrap gap-2">
                     <button
                       onClick={() => deployAgent(agent)}
                       disabled={agent.deployed}
-                      className={`flex-1 min-w-[120px] px-4 py-2.5 rounded-lg font-semibold shadow-md transition-all duration-200 ${
+                      className={`flex-1 min-w-[100px] px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg font-semibold shadow-md transition-all duration-200 text-sm sm:text-base ${
                         agent.deployed
                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                           : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600 hover:shadow-lg transform hover:-translate-y-0.5'
@@ -602,24 +605,24 @@ export default function AgentBuilder() {
                     </button>
                     <button
                       onClick={() => exportAgent(agent)}
-                      className="flex-1 min-w-[120px] px-4 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg hover:from-blue-600 hover:to-indigo-600 font-semibold shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
+                      className="flex-1 min-w-[100px] px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg hover:from-blue-600 hover:to-indigo-600 font-semibold shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 text-sm sm:text-base"
                     >
                       💾 Export
                     </button>
                     {agent.deployed ? (
                       <a
-                        href={`/?agentUrl=${encodeURIComponent(agent.url)}`}
-                        className="flex-1 min-w-[120px] px-4 py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 font-semibold shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 text-center"
+                        href={`/chat?agentUrl=${encodeURIComponent(agent.url)}`}
+                        className="flex-1 min-w-[100px] px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 font-semibold shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 text-center text-sm sm:text-base"
                       >
-                        💬 Test Chat
+                        💬 Chat
                       </a>
                     ) : (
                       <button
                         disabled
-                        className="flex-1 min-w-[120px] px-4 py-2.5 bg-gray-300 text-gray-500 rounded-lg font-semibold cursor-not-allowed"
+                        className="flex-1 min-w-[100px] px-3 sm:px-4 py-2 sm:py-2.5 bg-gray-300 text-gray-500 rounded-lg font-semibold cursor-not-allowed text-sm sm:text-base"
                         title="Deploy the agent first to test chat"
                       >
-                        💬 Test Chat
+                        💬 Chat
                       </button>
                     )}
                   </div>
@@ -629,6 +632,62 @@ export default function AgentBuilder() {
           </div>
         )}
       </div>
+
+      {/* Deploy Success Modal */}
+      {deployedAgent && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 animate-fade-in">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-3xl">✅</span>
+              </div>
+              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Agent Deployed!</h3>
+              <p className="text-sm sm:text-base text-gray-600">Your agent is now live and ready to use</p>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-2">Base URL</label>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(deployedAgent.url);
+                    alert('Base URL copied to clipboard!');
+                  }}
+                  className="w-full bg-gray-50 hover:bg-gray-100 border-2 border-gray-200 hover:border-purple-300 rounded-lg p-3 text-left transition-all group"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <code className="text-xs sm:text-sm text-gray-700 break-all flex-1">{deployedAgent.url}</code>
+                    <span className="text-gray-400 group-hover:text-purple-600 text-sm flex-shrink-0">📋 Copy</span>
+                  </div>
+                </button>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-2">Agent Card URL</label>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(deployedAgent.cardUrl);
+                    alert('Agent Card URL copied to clipboard!');
+                  }}
+                  className="w-full bg-gray-50 hover:bg-gray-100 border-2 border-gray-200 hover:border-purple-300 rounded-lg p-3 text-left transition-all group"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <code className="text-xs sm:text-sm text-gray-700 break-all flex-1">{deployedAgent.cardUrl}</code>
+                    <span className="text-gray-400 group-hover:text-purple-600 text-sm flex-shrink-0">📋 Copy</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setDeployedAgent(null)}
+              className="w-full mt-6 px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 font-semibold shadow-md hover:shadow-lg transition-all"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
