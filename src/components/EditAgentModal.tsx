@@ -283,7 +283,7 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
                               setEditingSkillId(null);
                             }}
                             className="w-20 px-2 py-0.5 border-0 border-b border-purple-300 rounded-none text-xs focus:border-purple-500 focus:outline-none text-gray-900 placeholder:text-gray-400"
-                            placeholder="tag"
+                            placeholder="Tag"
                             autoFocus
                           />
                         ) : (
@@ -291,7 +291,7 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
                             onClick={() => setEditingSkillId(skill.id)}
                             className="px-2 py-0.5 text-gray-400 hover:text-purple-600 rounded text-xs transition-colors"
                           >
-                            + tag
+                            + Tag
                           </button>
                         )}
                       </div>
@@ -370,7 +370,7 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
                         setEditingSkillId(null);
                       }}
                       className="w-20 px-2 py-0.5 border-0 border-b border-purple-300 rounded-none text-xs focus:border-purple-500 focus:outline-none text-gray-900 placeholder:text-gray-400"
-                      placeholder="tag"
+                      placeholder="Tag"
                       autoFocus
                     />
                   ) : (
@@ -378,7 +378,7 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
                       onClick={() => setEditingSkillId('new-skill')}
                       className="px-2 py-0.5 text-gray-400 hover:text-purple-600 rounded text-xs transition-colors"
                     >
-                      + tag
+                      + Tag
                     </button>
                   )}
                 </div>

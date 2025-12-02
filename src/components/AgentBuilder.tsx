@@ -168,41 +168,41 @@ export default function AgentBuilder() {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100">
       {/* Navigation Bar */}
       <nav className="bg-white/80 backdrop-blur-md border-b border-purple-100 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-8 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-              <span className="text-white text-xl font-bold">🏠</span>
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-3 sm:py-4 flex items-center justify-between gap-2">
+          <Link href="/" className="flex items-center gap-2 sm:gap-3 group min-w-0 flex-shrink">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
+              <span className="text-white text-lg sm:text-xl font-bold">🏠</span>
             </div>
-            <span className="font-bold text-gray-700 group-hover:text-purple-600 transition-colors">Home</span>
+            <span className="font-bold text-sm sm:text-base text-gray-700 group-hover:text-purple-600 transition-colors truncate">Home</span>
           </Link>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
             <WalletButton />
-            <div className="px-4 py-2 bg-gradient-to-r from-purple-100 to-blue-100 rounded-lg">
-              <span className="text-sm font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                A2A Protocol v0.3.0
+            <div className="px-2 py-1.5 sm:px-4 sm:py-2 bg-gradient-to-r from-purple-100 to-blue-100 rounded-lg h-[30px] sm:h-[40px] flex items-center">
+              <span className="text-xs sm:text-sm font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent whitespace-nowrap">
+                <span className="hidden sm:inline">A2A Protocol </span>v0.3.0
               </span>
             </div>
           </div>
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto p-8">
+      <div className="max-w-7xl mx-auto p-4 sm:p-8">
         {/* Header */}
-        <div className="text-center mb-12 mt-8">
-          <h1 className="text-5xl font-extrabold mb-4 bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
+        <div className="text-center mb-8 sm:mb-12 mt-4 sm:mt-8">
+          <h1 className="text-3xl sm:text-5xl font-extrabold mb-3 sm:mb-4 bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent leading-tight">
             A2A Agent Builder
           </h1>
-          <p className="text-gray-600 text-lg">Build and deploy your own AI agents quickly and easily</p>
+          <p className="text-gray-600 text-base sm:text-lg">Build and deploy your own AI agents quickly and easily</p>
         </div>
 
         {/* Create New Agent Section - Centered */}
         <div className="max-w-3xl mx-auto mb-8">
-          <div className="space-y-6 bg-white/90 backdrop-blur-sm p-8 rounded-2xl shadow-xl border border-purple-100 hover:shadow-2xl transition-shadow duration-300">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
-                <span className="text-white text-xl font-bold">✨</span>
+          <div className="space-y-6 bg-white/90 backdrop-blur-sm p-4 sm:p-8 rounded-2xl shadow-xl border border-purple-100 hover:shadow-2xl transition-shadow duration-300">
+            <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                <span className="text-white text-xl sm:text-2xl font-bold">✨</span>
               </div>
-              <h2 className="text-2xl font-bold text-gray-800">Create New Agent</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Create New Agent</h2>
             </div>
           
           <div>
@@ -213,15 +213,15 @@ export default function AgentBuilder() {
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              className="w-full p-4 border-2 border-gray-200 rounded-xl h-40 focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 resize-none text-gray-900 placeholder:text-gray-400"
-              placeholder="Example: Create an AI tutor that teaches Web3 and blockchain technology using the Socratic method. Guide students to find answers themselves and help them understand complex concepts step by step."
+              className="w-full p-3 sm:p-4 border-2 border-gray-200 rounded-xl h-32 sm:h-40 focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 resize-none text-sm sm:text-base text-gray-900 placeholder:text-gray-400"
+              placeholder="Example: Create an AI tutor that teaches Web3 using the Socratic method"
             />
           </div>
 
           <button
             onClick={generateAgentFromPrompt}
             disabled={isGenerating || !prompt.trim()}
-            className="w-full py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 font-bold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
+            className="w-full py-3 sm:py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 font-bold text-base sm:text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
           >
             {isGenerating ? (
               <span className="flex items-center justify-center gap-2">
@@ -236,14 +236,14 @@ export default function AgentBuilder() {
 
           {/* Generated Preview */}
           {generatedForm && (
-            <div className="mt-6 p-6 bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl border-2 border-purple-200 animate-fade-in">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-lg text-purple-900 flex items-center gap-2">
+            <div className="mt-6 p-4 sm:p-6 bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl border-2 border-purple-200 animate-fade-in">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="font-bold text-base sm:text-lg text-purple-900 flex items-center gap-2">
                   ✨ Generated Agent
                 </h3>
                 <button
                   onClick={() => setIsEditing(!isEditing)}
-                  className="px-4 py-2 bg-white border-2 border-purple-300 text-purple-700 rounded-lg hover:bg-purple-50 font-semibold transition text-sm"
+                  className="px-3 py-1.5 sm:px-4 sm:py-2 bg-white border-2 border-purple-300 text-purple-700 rounded-lg hover:bg-purple-50 font-semibold transition text-xs sm:text-sm"
                 >
                   {isEditing ? 'Preview' : 'Edit'}
                 </button>
@@ -251,30 +251,32 @@ export default function AgentBuilder() {
 
               {!isEditing ? (
                 // Preview Mode
-                <div className="space-y-4">
-                  <div className="bg-white p-3 rounded-lg">
-                    <span className="text-xs font-semibold text-purple-600 uppercase">Name</span>
-                    <p className="font-bold text-gray-800 mt-1">{generatedForm.name}</p>
+                <div className="space-y-3">
+                  <div className="bg-white p-4 rounded-lg shadow-sm">
+                    <span className="text-xs font-bold text-purple-600 uppercase tracking-wide block mb-2">Name</span>
+                    <p className="font-bold text-gray-900 text-base sm:text-lg">{generatedForm.name}</p>
                   </div>
 
-                  <div className="bg-white p-3 rounded-lg">
-                    <span className="text-xs font-semibold text-purple-600 uppercase">Description</span>
-                    <p className="text-gray-700 mt-1">{generatedForm.description}</p>
+                  <div className="bg-white p-4 rounded-lg shadow-sm">
+                    <span className="text-xs font-bold text-purple-600 uppercase tracking-wide block mb-2">Description</span>
+                    <p className="text-gray-700 text-sm sm:text-base leading-relaxed">{generatedForm.description}</p>
                   </div>
 
-                  <div className="bg-white p-3 rounded-lg">
-                    <span className="text-xs font-semibold text-purple-600 uppercase">Skills</span>
-                    <div className="mt-2 space-y-2">
+                  <div className="bg-white p-4 rounded-lg shadow-sm">
+                    <span className="text-xs font-bold text-purple-600 uppercase tracking-wide block mb-3">Skills</span>
+                    <div className="space-y-2.5">
                       {generatedForm.skills.map(skill => (
-                        <div key={skill.id} className="text-sm bg-purple-50 p-2 rounded">
-                          <div>
-                            <span className="font-semibold text-purple-700">{skill.name}:</span>
-                            <span className="text-gray-700 ml-1">{skill.description}</span>
+                        <div key={skill.id} className="bg-gradient-to-r from-purple-50 to-blue-50 p-3 rounded-lg border border-purple-100">
+                          <div className="font-semibold text-purple-700 text-sm sm:text-base mb-1">
+                            {skill.name}
+                          </div>
+                          <div className="text-gray-600 text-xs sm:text-sm">
+                            {skill.description}
                           </div>
                           {skill.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-1">
+                            <div className="flex flex-wrap gap-1.5 mt-2">
                               {skill.tags.map((tag, idx) => (
-                                <span key={idx} className="px-2 py-0.5 bg-purple-200 text-purple-700 rounded text-xs">
+                                <span key={idx} className="px-2 py-0.5 bg-purple-200 text-purple-700 rounded-full text-xs font-medium">
                                   {tag}
                                 </span>
                               ))}
@@ -285,39 +287,39 @@ export default function AgentBuilder() {
                     </div>
                   </div>
 
-                  <div className="bg-white p-3 rounded-lg">
-                    <span className="text-xs font-semibold text-purple-600 uppercase">AI Model</span>
-                    <p className="text-sm font-medium text-gray-800 mt-1">{generatedForm.modelProvider} / {generatedForm.modelName}</p>
+                  <div className="bg-white p-4 rounded-lg shadow-sm">
+                    <span className="text-xs font-bold text-purple-600 uppercase tracking-wide block mb-2">AI Model</span>
+                    <p className="text-sm sm:text-base font-medium text-gray-800">{generatedForm.modelProvider} / {generatedForm.modelName}</p>
                   </div>
                 </div>
               ) : (
                 // Edit Mode
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-xs font-semibold text-purple-600 uppercase block mb-2">Name</label>
+                <div className="space-y-3">
+                  <div className="bg-white p-4 rounded-lg shadow-sm">
+                    <label className="text-xs font-bold text-purple-600 uppercase tracking-wide block mb-2">Name</label>
                     <input
                       type="text"
                       value={generatedForm.name}
                       onChange={(e) => setGeneratedForm({ ...generatedForm, name: e.target.value })}
-                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none text-gray-900 placeholder:text-gray-400"
+                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-purple-400 focus:ring-2 focus:ring-purple-100 focus:outline-none text-sm sm:text-base text-gray-900 placeholder:text-gray-400"
                     />
                   </div>
 
-                  <div>
-                    <label className="text-xs font-semibold text-purple-600 uppercase block mb-2">Description</label>
+                  <div className="bg-white p-4 rounded-lg shadow-sm">
+                    <label className="text-xs font-bold text-purple-600 uppercase tracking-wide block mb-2">Description</label>
                     <textarea
                       value={generatedForm.description}
                       onChange={(e) => setGeneratedForm({ ...generatedForm, description: e.target.value })}
-                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none resize-none text-gray-900 placeholder:text-gray-400"
+                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-purple-400 focus:ring-2 focus:ring-purple-100 focus:outline-none resize-none text-sm sm:text-base text-gray-900 placeholder:text-gray-400"
                       rows={3}
                     />
                   </div>
 
-                  <div>
-                    <label className="text-xs font-semibold text-purple-600 uppercase block mb-3">Skills</label>
-                    <div className="space-y-3 mb-4">
+                  <div className="bg-white p-4 rounded-lg shadow-sm">
+                    <label className="text-xs font-bold text-purple-600 uppercase tracking-wide block mb-3">Skills</label>
+                    <div className="space-y-2.5 mb-4">
                       {generatedForm.skills.map(skill => (
-                        <div key={skill.id} className="group p-4 bg-white rounded-lg border border-gray-200 hover:border-purple-300 hover:shadow-sm transition-all">
+                        <div key={skill.id} className="group p-3 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-100 hover:border-purple-300 hover:shadow-sm transition-all">
                           <div className="flex items-start gap-3">
                             <div className="flex-1 space-y-2">
                               <input
@@ -329,7 +331,7 @@ export default function AgentBuilder() {
                                   );
                                   setGeneratedForm({ ...generatedForm, skills: updatedSkills });
                                 }}
-                                className="w-full px-0 py-1 border-0 border-b border-transparent hover:border-gray-200 focus:border-purple-400 text-base font-semibold text-gray-800 focus:outline-none transition-colors bg-transparent placeholder:text-gray-400"
+                                className="w-full px-2 py-1 border-0 border-b-2 border-transparent hover:border-purple-200 focus:border-purple-400 text-sm sm:text-base font-semibold text-purple-700 focus:outline-none transition-colors bg-transparent placeholder:text-gray-400"
                                 placeholder="Skill name"
                               />
                               <input
@@ -341,7 +343,7 @@ export default function AgentBuilder() {
                                   );
                                   setGeneratedForm({ ...generatedForm, skills: updatedSkills });
                                 }}
-                                className="w-full px-0 py-1 border-0 text-sm text-gray-600 focus:outline-none bg-transparent placeholder:text-gray-400"
+                                className="w-full px-2 py-1 border-0 text-xs sm:text-sm text-gray-600 focus:outline-none bg-transparent placeholder:text-gray-400"
                                 placeholder="Description"
                               />
 
@@ -350,7 +352,7 @@ export default function AgentBuilder() {
                                 {skill.tags.map((tag, idx) => (
                                   <span
                                     key={idx}
-                                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 text-purple-700 rounded text-xs hover:bg-purple-100 transition-colors"
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-200 text-purple-700 rounded-full text-xs font-medium hover:bg-purple-300 transition-colors"
                                   >
                                     {tag}
                                     <button
@@ -399,7 +401,7 @@ export default function AgentBuilder() {
                                       setEditingSkillId(null);
                                     }}
                                     className="w-20 px-2 py-0.5 border-0 border-b border-purple-300 rounded-none text-xs focus:border-purple-500 focus:outline-none text-gray-900 placeholder:text-gray-400"
-                                    placeholder="tag"
+                                    placeholder="Tag"
                                     autoFocus
                                   />
                                 ) : (
@@ -407,7 +409,7 @@ export default function AgentBuilder() {
                                     onClick={() => setEditingSkillId(skill.id)}
                                     className="px-2 py-0.5 text-gray-400 hover:text-purple-600 rounded text-xs transition-colors"
                                   >
-                                    + tag
+                                    + Tag
                                   </button>
                                 )}
                               </div>
@@ -417,7 +419,8 @@ export default function AgentBuilder() {
                                 const updatedSkills = generatedForm.skills.filter(s => s.id !== skill.id);
                                 setGeneratedForm({ ...generatedForm, skills: updatedSkills });
                               }}
-                              className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-all"
+                              className="sm:opacity-0 sm:group-hover:opacity-100 text-gray-400 hover:text-gray-600 transition-all flex-shrink-0 text-sm"
+                              title="Delete skill"
                             >
                               ✕
                             </button>
@@ -427,20 +430,20 @@ export default function AgentBuilder() {
                     </div>
 
                     {/* Add New Skill */}
-                    <div className="group p-4 bg-gray-50 hover:bg-white rounded-lg border-2 border-dashed border-gray-300 hover:border-purple-300 transition-all">
+                    <div className="group p-3 bg-white rounded-lg border-2 border-dashed border-purple-200 hover:border-purple-400 hover:shadow-sm transition-all">
                       <div className="space-y-2">
                         <input
                           type="text"
                           value={skill.name}
                           onChange={(e) => setSkill({ ...skill, name: e.target.value })}
-                          className="w-full px-0 py-1 border-0 border-b border-transparent hover:border-gray-200 focus:border-purple-400 text-base font-semibold text-gray-800 focus:outline-none transition-colors bg-transparent placeholder:text-gray-400"
+                          className="w-full px-2 py-1 border-0 border-b-2 border-transparent hover:border-purple-200 focus:border-purple-400 text-sm sm:text-base font-semibold text-gray-700 focus:outline-none transition-colors bg-transparent placeholder:text-gray-400"
                           placeholder="New skill name"
                         />
                         <input
                           type="text"
                           value={skill.description}
                           onChange={(e) => setSkill({ ...skill, description: e.target.value })}
-                          className="w-full px-0 py-1 border-0 text-sm text-gray-600 focus:outline-none bg-transparent placeholder:text-gray-400"
+                          className="w-full px-2 py-1 border-0 text-xs sm:text-sm text-gray-600 focus:outline-none bg-transparent placeholder:text-gray-400"
                           placeholder="Description"
                         />
 
@@ -449,7 +452,7 @@ export default function AgentBuilder() {
                           {skill.tags.map((tag, idx) => (
                             <span
                               key={idx}
-                              className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 text-purple-700 rounded text-xs"
+                              className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-200 text-purple-700 rounded-full text-xs font-medium"
                             >
                               {tag}
                               <button
@@ -489,7 +492,7 @@ export default function AgentBuilder() {
                                 setEditingSkillId(null);
                               }}
                               className="w-20 px-2 py-0.5 border-0 border-b border-purple-300 rounded-none text-xs focus:border-purple-500 focus:outline-none text-gray-900 placeholder:text-gray-400"
-                              placeholder="tag"
+                              placeholder="Tag"
                               autoFocus
                             />
                           ) : (
@@ -497,7 +500,7 @@ export default function AgentBuilder() {
                               onClick={() => setEditingSkillId('new-skill')}
                               className="px-2 py-0.5 text-gray-400 hover:text-purple-600 rounded text-xs transition-colors"
                             >
-                              + tag
+                              + Tag
                             </button>
                           )}
                         </div>
@@ -536,16 +539,16 @@ export default function AgentBuilder() {
         {/* Created Agents Section - Show all created agents */}
         {agents.length > 0 && (
           <div className="max-w-3xl mx-auto space-y-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center">
-                <span className="text-white text-xl font-bold">🤖</span>
+            <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                <span className="text-white text-xl sm:text-2xl font-bold">🤖</span>
               </div>
-              <h2 className="text-2xl font-bold text-gray-800">Created Agents</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Created Agents</h2>
             </div>
 
             <div className="space-y-4">
               {agents.map(agent => (
-                <div key={agent.id} className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-xl border border-blue-100 hover:shadow-2xl hover:border-blue-300 transition-all duration-300">
+                <div key={agent.id} className="bg-white/90 backdrop-blur-sm p-4 sm:p-6 rounded-2xl shadow-xl border border-blue-100 hover:shadow-2xl hover:border-blue-300 transition-all duration-300">
                   <div className="flex items-start justify-between mb-3">
                     <div>
                       <h3 className="text-xl font-bold text-gray-800 mb-1">{agent.name}</h3>
