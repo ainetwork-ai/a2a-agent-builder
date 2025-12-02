@@ -90,34 +90,36 @@ export default function DeployedAgents() {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100">
       {/* Navigation Bar */}
       <nav className="bg-white/80 backdrop-blur-md border-b border-purple-100 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
-              <span className="text-white text-xl font-bold">🤖</span>
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-3 sm:py-4 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
+              <span className="text-white text-lg sm:text-xl font-bold">🤖</span>
             </div>
-            <span className="font-bold text-xl bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+            <span className="font-bold text-sm sm:text-xl bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent truncate">
               A2A Agent Hub
             </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
             <WalletButton />
             <Link
               href="/builder"
-              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition font-semibold shadow-md"
+              className="px-2.5 sm:px-4 h-[30px] sm:h-[40px] bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition font-semibold shadow-md text-xs sm:text-base whitespace-nowrap flex items-center justify-center"
+              title="Create Agent"
             >
-              ✨ Create Agent
+              <span className="hidden sm:inline">✨ Create Agent</span>
+              <span className="sm:hidden">✨</span>
             </Link>
           </div>
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto p-8">
+      <div className="max-w-7xl mx-auto p-4 sm:p-8">
         {/* Header */}
-        <div className="text-center mb-12 mt-8">
-          <h1 className="text-5xl font-extrabold mb-4 bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
+        <div className="text-center mb-8 sm:mb-12 mt-4 sm:mt-8">
+          <h1 className="text-3xl sm:text-5xl font-extrabold mb-3 sm:mb-4 bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent leading-tight">
             Deployed A2A Agents
           </h1>
-          <p className="text-gray-600 text-lg">Chat with deployed AI agents</p>
+          <p className="text-gray-600 text-base sm:text-lg">Chat with deployed AI agents</p>
         </div>
 
         {/* Content */}
