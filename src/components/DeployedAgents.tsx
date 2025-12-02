@@ -33,7 +33,14 @@ export default function DeployedAgents() {
   useEffect(() => {
     const fetchAgents = async () => {
       try {
-        const response = await fetch('/api/agents/list');
+        // Only fetch agents if wallet is connected
+        if (!isConnected || !address) {
+          setAgents([]);
+          setIsLoading(false);
+          return;
+        }
+
+        const response = await fetch(`/api/agents/list?address=${address}`);
         const data = await response.json();
         setAgents(data.agents || []);
       } catch (error) {
@@ -44,7 +51,7 @@ export default function DeployedAgents() {
     };
 
     fetchAgents();
-  }, []);
+  }, [isConnected, address]);
 
   const deleteAgent = async (agentId: string) => {
     if (!isConnected || !address) {
@@ -78,46 +85,41 @@ export default function DeployedAgents() {
     }
   };
 
-  // Check if current user owns the agent
-  const isOwner = (agent: DeployedAgent): boolean => {
-    if (!isConnected || !address || !agent.creator) {
-      return false; // If no wallet connected, no creator, or legacy agent
-    }
-    return agent.creator.toLowerCase() === address.toLowerCase();
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100">
       {/* Navigation Bar */}
       <nav className="bg-white/80 backdrop-blur-md border-b border-purple-100 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
-              <span className="text-white text-xl font-bold">🤖</span>
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-3 sm:py-4 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
+              <span className="text-white text-lg sm:text-xl font-bold">🤖</span>
             </div>
-            <span className="font-bold text-xl bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+            <span className="font-bold text-sm sm:text-xl bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent truncate">
               A2A Agent Hub
             </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
             <WalletButton />
             <Link
               href="/builder"
-              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition font-semibold shadow-md"
+              className="px-2.5 sm:px-4 h-[30px] sm:h-[40px] bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition font-semibold shadow-md text-xs sm:text-base whitespace-nowrap flex items-center justify-center"
+              title="Create Agent"
             >
-              ✨ Create Agent
+              <span className="hidden sm:inline">✨ Create Agent</span>
+              <span className="sm:hidden">✨</span>
             </Link>
           </div>
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto p-8">
+      <div className="max-w-7xl mx-auto p-4 sm:p-8">
         {/* Header */}
-        <div className="text-center mb-12 mt-8">
-          <h1 className="text-5xl font-extrabold mb-4 bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
+        <div className="text-center mb-8 sm:mb-12 mt-4 sm:mt-8">
+          <h1 className="text-3xl sm:text-5xl font-extrabold mb-3 sm:mb-4 bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent leading-tight">
             Deployed A2A Agents
           </h1>
-          <p className="text-gray-600 text-lg">Chat with deployed AI agents</p>
+          <p className="text-gray-600 text-base sm:text-lg">Chat with deployed AI agents</p>
         </div>
 
         {/* Content */}
@@ -125,6 +127,12 @@ export default function DeployedAgents() {
           <div className="text-center py-20">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent"></div>
             <p className="mt-4 text-gray-600">Loading agents...</p>
+          </div>
+        ) : !isConnected ? (
+          <div className="bg-white/90 backdrop-blur-sm p-12 rounded-2xl shadow-xl border border-blue-100 text-center">
+            <div className="text-6xl mb-4">🔐</div>
+            <p className="text-gray-500 text-lg mb-4">Connect your wallet to view your agents</p>
+            <p className="text-gray-400 text-sm">Only your deployed agents will be visible</p>
           </div>
         ) : agents.length === 0 ? (
           <div className="bg-white/90 backdrop-blur-sm p-12 rounded-2xl shadow-xl border border-blue-100 text-center">
@@ -193,39 +201,29 @@ export default function DeployedAgents() {
                   >
                     💬 Start Chat
                   </Link>
-                  {/* Only show Edit/Delete/Copy buttons to agent owners */}
-                  {isOwner(agent) && (
-                    <>
-                      <button
-                        onClick={() => {
-                          const agentCardUrl = `${agent.url}/.well-known/agent.json`;
-                          navigator.clipboard.writeText(agentCardUrl);
-                          alert('Agent Card URL copied to clipboard!');
-                        }}
-                        className="w-full py-2 bg-white border-2 border-gray-200 text-gray-700 rounded-lg hover:border-purple-300 hover:bg-purple-50 font-semibold transition-all duration-200 text-sm"
-                      >
-                        📋 Copy Agent URL
-                      </button>
-                      <button
-                        onClick={() => setEditingAgent(agent)}
-                        className="w-full py-2 bg-white border-2 border-blue-200 text-blue-600 rounded-lg hover:border-blue-400 hover:bg-blue-50 font-semibold transition-all duration-200 text-sm"
-                      >
-                        ✏️ Edit Agent
-                      </button>
-                      <button
-                        onClick={() => deleteAgent(agent.id)}
-                        className="w-full py-2 bg-white border-2 border-red-200 text-red-600 rounded-lg hover:border-red-400 hover:bg-red-50 font-semibold transition-all duration-200 text-sm"
-                      >
-                        🗑️ Delete Agent
-                      </button>
-                    </>
-                  )}
-                  {/* Show message for non-owners */}
-                  {!isOwner(agent) && agent.creator && (
-                    <div className="w-full py-2 text-center text-xs text-gray-500 italic">
-                      Connect wallet to edit/delete
-                    </div>
-                  )}
+                  {/* All displayed agents are owned by current user */}
+                  <button
+                    onClick={() => {
+                      const agentCardUrl = `${agent.url}/.well-known/agent.json`;
+                      navigator.clipboard.writeText(agentCardUrl);
+                      alert('Agent Card URL copied to clipboard!');
+                    }}
+                    className="w-full py-2 bg-white border-2 border-gray-200 text-gray-700 rounded-lg hover:border-purple-300 hover:bg-purple-50 font-semibold transition-all duration-200 text-sm"
+                  >
+                    📋 Copy Agent URL
+                  </button>
+                  <button
+                    onClick={() => setEditingAgent(agent)}
+                    className="w-full py-2 bg-white border-2 border-blue-200 text-blue-600 rounded-lg hover:border-blue-400 hover:bg-blue-50 font-semibold transition-all duration-200 text-sm"
+                  >
+                    ✏️ Edit Agent
+                  </button>
+                  <button
+                    onClick={() => deleteAgent(agent.id)}
+                    className="w-full py-2 bg-white border-2 border-red-200 text-red-600 rounded-lg hover:border-red-400 hover:bg-red-50 font-semibold transition-all duration-200 text-sm"
+                  >
+                    🗑️ Delete Agent
+                  </button>
                 </div>
               </div>
             ))}
@@ -253,7 +251,11 @@ export default function DeployedAgents() {
             // Refresh agents list
             const fetchAgents = async () => {
               try {
-                const response = await fetch('/api/agents/list');
+                if (!isConnected || !address) {
+                  setAgents([]);
+                  return;
+                }
+                const response = await fetch(`/api/agents/list?address=${address}`);
                 const data = await response.json();
                 setAgents(data.agents || []);
               } catch (error) {
