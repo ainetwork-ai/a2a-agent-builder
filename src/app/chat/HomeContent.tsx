@@ -27,6 +27,7 @@ export default function HomeContent() {
   const [username, setUsername] = useState<string | null>(null);
   const [showUsernameModal, setShowUsernameModal] = useState(false);
   const [usernameInput, setUsernameInput] = useState('');
+  const [showMemoryModal, setShowMemoryModal] = useState(false);
   // 대화 세션 동안 유지되는 contextId 생성
   const [contextId] = useState<string>(uuidv4());
 
@@ -332,43 +333,44 @@ export default function HomeContent() {
 
       {/* Navigation Bar */}
       <nav className="bg-white/80 backdrop-blur-md border-b border-purple-100 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-8 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-              <span className="text-white text-xl font-bold">🏠</span>
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-3 sm:py-4 flex items-center justify-between gap-2">
+          <Link href="/" className="flex items-center gap-2 sm:gap-3 group min-w-0 flex-shrink">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
+              <span className="text-white text-lg sm:text-xl font-bold">🏠</span>
             </div>
-            <span className="font-bold text-gray-700 group-hover:text-purple-600 transition-colors">Home</span>
+            <span className="font-bold text-sm sm:text-base text-gray-700 group-hover:text-purple-600 transition-colors truncate">Home</span>
           </Link>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-100 to-blue-100 rounded-lg">
-              <span className="text-sm font-semibold text-purple-700">{agentName}</span>
+          <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
+            <div className="flex items-center gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-purple-100 to-blue-100 rounded-lg h-[30px] sm:h-[40px]">
+              <span className="text-xs sm:text-sm font-semibold text-purple-700 truncate max-w-[120px] sm:max-w-none">{agentName}</span>
             </div>
             <Link
               href="/builder"
-              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition font-semibold shadow-md"
+              className="px-2.5 sm:px-4 h-[30px] sm:h-[40px] bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition font-semibold shadow-md text-xs sm:text-base whitespace-nowrap flex items-center justify-center"
             >
-              ✨ Agent Builder
+              <span className="hidden sm:inline">✨ Agent Builder</span>
+              <span className="sm:hidden">✨</span>
             </Link>
           </div>
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto p-8">
-        <div className="flex gap-4" style={{ height: 'calc(100vh - 200px)' }}>
+      <div className="max-w-7xl mx-auto p-4 sm:p-8">
+        <div className="flex gap-4" style={{ height: 'calc(100vh - 120px)' }}>
           {/* Chat Area */}
           <div className="flex-1 bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-purple-100 overflow-hidden">
             <div className="flex flex-col h-full">
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gradient-to-br from-gray-50 to-purple-50/30">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6 bg-gradient-to-br from-gray-50 to-purple-50/30">
               {history.length === 0 ? (
                 <div className="flex items-center justify-center h-full">
-                  <div className="text-center p-8 bg-white/80 backdrop-blur-sm rounded-xl shadow-md border border-purple-100 max-w-md">
-                    <div className="text-5xl mb-4">💬</div>
-                    <h2 className="text-xl font-bold text-gray-800 mb-2">Start a Conversation</h2>
-                    <p className="text-gray-600 text-sm mb-4">
-                      Chat with {agentName} using A2A Protocol
+                  <div className="text-center p-4 sm:p-8 bg-white/80 backdrop-blur-sm rounded-xl shadow-md border border-purple-100 max-w-md">
+                    <div className="text-3xl sm:text-5xl mb-2 sm:mb-4">💬</div>
+                    <h2 className="text-base sm:text-xl font-bold text-gray-800 mb-1 sm:mb-2">Start a Conversation</h2>
+                    <p className="text-gray-600 text-xs sm:text-sm mb-3 sm:mb-4">
+                      Chat with {agentName}
                     </p>
-                    <div className="bg-purple-50 px-4 py-2 rounded-lg">
+                    <div className="bg-purple-50 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg">
                       <span className="text-xs text-gray-500">Session: </span>
                       <span className="text-xs font-mono text-purple-700">{contextId.substring(0, 8)}...</span>
                     </div>
@@ -378,7 +380,7 @@ export default function HomeContent() {
                 <>
                   {history.map((msg) => (
                     <div key={msg.messageId} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`p-4 rounded-xl shadow-md max-w-3xl leading-relaxed ${
+                      <div className={`p-2.5 sm:p-4 rounded-xl shadow-md max-w-[85%] sm:max-w-3xl leading-relaxed text-xs sm:text-base ${
                         msg.role === 'user'
                           ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-br-none'
                           : 'bg-white text-gray-800 border border-purple-100 rounded-bl-none'
@@ -389,10 +391,10 @@ export default function HomeContent() {
                   ))}
                   {isLoading && (
                     <div className="flex justify-start">
-                      <div className="bg-white p-4 rounded-xl shadow-md border border-purple-100">
+                      <div className="bg-white p-3 sm:p-4 rounded-xl shadow-md border border-purple-100">
                         <div className="flex items-center gap-2 text-gray-500">
                           <div className="animate-spin rounded-full h-4 w-4 border-2 border-purple-500 border-t-transparent"></div>
-                          <span className="text-sm">Waiting for response via A2A Protocol...</span>
+                          <span className="text-xs sm:text-sm">Waiting for response...</span>
                         </div>
                       </div>
                     </div>
@@ -409,19 +411,27 @@ export default function HomeContent() {
               <div ref={messagesEndRef} />
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 border-t border-purple-100 bg-white/80 backdrop-blur-sm">
+            <form onSubmit={handleSubmit} className="p-4 sm:p-6 border-t border-purple-100 bg-white/80 backdrop-blur-sm">
               <div className="flex gap-2">
                 <input
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  className="flex-1 p-4 text-lg border-2 border-gray-200 rounded-xl focus:outline-none focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200"
+                  className="flex-1 p-2.5 sm:p-4 text-xs sm:text-base border-2 border-gray-200 rounded-xl focus:outline-none focus:border-purple-400 focus:ring-2 sm:ring-4 focus:ring-purple-100 transition-all duration-200"
                   placeholder="Type your message..."
                   disabled={isLoading}
                 />
                 <button
+                  type="button"
+                  onClick={() => setShowMemoryModal(true)}
+                  className="lg:hidden px-2.5 py-2.5 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 font-bold rounded-xl hover:from-purple-200 hover:to-blue-200 transition shadow-md text-base flex items-center justify-center"
+                  title="Agent Memory"
+                >
+                  🧠
+                </button>
+                <button
                   type="submit"
-                  className="px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold rounded-xl hover:from-purple-700 hover:to-blue-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
+                  className="px-3 sm:px-8 py-2.5 sm:py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold rounded-xl hover:from-purple-700 hover:to-blue-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none text-xs sm:text-base"
                   disabled={isLoading || !input.trim()}
                 >
                   {isLoading ? '...' : 'Send'}
@@ -431,20 +441,20 @@ export default function HomeContent() {
             </div>
           </div>
 
-          {/* Sidebar - Thinking & Caring */}
-          <div className="w-96 bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-purple-100 p-6 overflow-y-auto">
-            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <span className="text-2xl">🧠</span>
+          {/* Sidebar - Thinking & Caring (Desktop Only) */}
+          <div className="hidden lg:block w-96 bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-purple-100 p-6 overflow-y-auto">
+            <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <span className="text-xl sm:text-2xl">🧠</span>
               Agent Memory
             </h3>
 
             {/* Username */}
             {username && (
-              <div className="mb-4 p-3 bg-gradient-to-r from-green-50 to-teal-50 rounded-lg border border-green-200">
+              <div className="mb-3 sm:mb-4 p-2.5 sm:p-3 bg-gradient-to-r from-green-50 to-teal-50 rounded-lg border border-green-200">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm font-semibold text-green-700">User:</span>
+                  <span className="text-xs sm:text-sm font-semibold text-green-700">User:</span>
                 </div>
-                <div className="text-sm font-mono text-green-900 bg-white/50 px-2 py-1 rounded">
+                <div className="text-xs sm:text-sm font-mono text-green-900 bg-white/50 px-2 py-1 rounded">
                   {username}
                 </div>
               </div>
@@ -452,48 +462,48 @@ export default function HomeContent() {
 
             {/* Current Intent */}
             {currentIntent && (
-              <div className="mb-4 p-3 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+              <div className="mb-3 sm:mb-4 p-2.5 sm:p-3 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-semibold text-purple-700">Current Topic:</span>
+                  <span className="text-xs sm:text-sm font-semibold text-purple-700">Current Topic:</span>
                   <span className="text-xs font-semibold text-purple-600 bg-white/70 px-2 py-0.5 rounded-full">
                     {thinkingFacts.length} facts
                   </span>
                 </div>
-                <div className="text-sm font-mono text-purple-900 bg-white/50 px-2 py-1 rounded">
+                <div className="text-xs sm:text-sm font-mono text-purple-900 bg-white/50 px-2 py-1 rounded">
                   {currentIntent}
                 </div>
               </div>
             )}
 
             {/* Thinking Facts */}
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-3">
+            <div className="mb-4 sm:mb-6">
+              <div className="flex items-center justify-between mb-2 sm:mb-3">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
-                  <h4 className="font-semibold text-sm text-blue-700">Thinking Memory</h4>
+                  <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                  <h4 className="font-semibold text-xs sm:text-sm text-blue-700">Thinking Memory</h4>
                 </div>
               </div>
 
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-3 sm:p-4 rounded-lg border border-blue-200">
                 {thinkingFacts.length > 0 ? (
-                  <div className="space-y-2">
+                  <div className="space-y-1.5 sm:space-y-2">
                     {thinkingFacts.map((fact, index) => (
                       <div
                         key={index}
-                        className="flex gap-2 text-xs bg-white/80 p-2.5 rounded-md border border-blue-100 hover:border-blue-300 transition-colors group"
+                        className="flex gap-2 text-xs bg-white/80 p-2 sm:p-2.5 rounded-md border border-blue-100 hover:border-blue-300 transition-colors group"
                       >
-                        <span className="text-blue-600 font-bold flex-shrink-0 group-hover:scale-110 transition-transform">
+                        <span className="text-blue-600 font-bold flex-shrink-0 group-hover:scale-110 transition-transform text-xs">
                           {index + 1}.
                         </span>
-                        <span className="text-gray-700 leading-relaxed">
+                        <span className="text-gray-700 leading-relaxed text-xs">
                           {fact}
                         </span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-6">
-                    <div className="text-3xl mb-2 opacity-50">💭</div>
+                  <div className="text-center py-4 sm:py-6">
+                    <div className="text-2xl sm:text-3xl mb-2 opacity-50">💭</div>
                     <p className="text-xs text-gray-400 italic">
                       {currentIntent
                         ? 'Learning about this topic...'
@@ -507,10 +517,10 @@ export default function HomeContent() {
 
             {/* Caring */}
             <div>
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-2 sm:mb-3">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-pink-500 rounded-full animate-pulse"></div>
-                  <h4 className="font-semibold text-sm text-pink-700">Caring Memory</h4>
+                  <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-pink-500 rounded-full animate-pulse"></div>
+                  <h4 className="font-semibold text-xs sm:text-sm text-pink-700">Caring Memory</h4>
                 </div>
                 {caringFacts.length > 0 && (
                   <span className="text-xs font-semibold text-pink-600 bg-white/70 px-2 py-0.5 rounded-full">
@@ -518,26 +528,26 @@ export default function HomeContent() {
                   </span>
                 )}
               </div>
-              <div className="bg-gradient-to-br from-pink-50 to-rose-50 p-4 rounded-lg border border-pink-200">
+              <div className="bg-gradient-to-br from-pink-50 to-rose-50 p-3 sm:p-4 rounded-lg border border-pink-200">
                 {caringFacts.length > 0 ? (
-                  <div className="space-y-2">
+                  <div className="space-y-1.5 sm:space-y-2">
                     {caringFacts.map((fact, index) => (
                       <div
                         key={index}
-                        className="flex gap-2 text-xs bg-white/80 p-2.5 rounded-md border border-pink-100 hover:border-pink-300 transition-colors group"
+                        className="flex gap-2 text-xs bg-white/80 p-2 sm:p-2.5 rounded-md border border-pink-100 hover:border-pink-300 transition-colors group"
                       >
-                        <span className="text-pink-600 font-bold flex-shrink-0 group-hover:scale-110 transition-transform">
+                        <span className="text-pink-600 font-bold flex-shrink-0 group-hover:scale-110 transition-transform text-xs">
                           {index + 1}.
                         </span>
-                        <span className="text-gray-700 leading-relaxed">
+                        <span className="text-gray-700 leading-relaxed text-xs">
                           {fact}
                         </span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-6">
-                    <div className="text-3xl mb-2 opacity-50">💝</div>
+                  <div className="text-center py-4 sm:py-6">
+                    <div className="text-2xl sm:text-3xl mb-2 opacity-50">💝</div>
                     <p className="text-xs text-gray-400 italic">
                       {username
                         ? 'Learning about how you think...'
@@ -558,6 +568,116 @@ export default function HomeContent() {
           </div>
         </div>
       </div>
+
+      {/* Mobile Memory Modal */}
+      {showMemoryModal && (
+        <div className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end justify-center z-50">
+          <div className="bg-white rounded-t-3xl shadow-2xl w-full max-h-[70vh] overflow-hidden animate-slide-up">
+            {/* Header */}
+            <div className="flex items-center justify-between p-3 border-b border-purple-100 bg-gradient-to-r from-purple-50 to-blue-50">
+              <h3 className="text-base font-bold text-gray-800 flex items-center gap-2">
+                <span className="text-xl">🧠</span>
+                Agent Memory
+              </h3>
+              <button
+                onClick={() => setShowMemoryModal(false)}
+                className="w-7 h-7 flex items-center justify-center bg-white hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <span className="text-gray-600 text-sm">✕</span>
+              </button>
+            </div>
+
+            {/* Content - Scrollable */}
+            <div className="overflow-y-auto p-3" style={{ maxHeight: 'calc(70vh - 60px)' }}>
+              {/* Username */}
+              {username && (
+                <div className="mb-3 p-2 bg-gradient-to-r from-green-50 to-teal-50 rounded-lg border border-green-200">
+                  <span className="text-xs font-semibold text-green-700 block mb-1">User:</span>
+                  <div className="text-xs font-mono text-green-900 bg-white/50 px-2 py-1 rounded">
+                    {username}
+                  </div>
+                </div>
+              )}
+
+              {/* Current Intent */}
+              {currentIntent && (
+                <div className="mb-3 p-2 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-semibold text-purple-700">Current Topic:</span>
+                    <span className="text-xs font-semibold text-purple-600 bg-white/70 px-1.5 py-0.5 rounded-full">
+                      {thinkingFacts.length}
+                    </span>
+                  </div>
+                  <div className="text-xs font-mono text-purple-900 bg-white/50 px-2 py-1 rounded">
+                    {currentIntent}
+                  </div>
+                </div>
+              )}
+
+              {/* Thinking Facts */}
+              <div className="mb-4">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                  <h4 className="font-semibold text-xs text-blue-700">Thinking Memory</h4>
+                </div>
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-2.5 rounded-lg border border-blue-200">
+                  {thinkingFacts.length > 0 ? (
+                    <div className="space-y-1.5">
+                      {thinkingFacts.map((fact, index) => (
+                        <div key={index} className="flex gap-1.5 text-xs bg-white/80 p-2 rounded-md border border-blue-100">
+                          <span className="text-blue-600 font-bold flex-shrink-0">{index + 1}.</span>
+                          <span className="text-gray-700 leading-relaxed">{fact}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4">
+                      <div className="text-2xl mb-1 opacity-50">💭</div>
+                      <p className="text-xs text-gray-400 italic">
+                        {currentIntent ? 'Learning...' : 'Start chatting'}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Caring Memory */}
+              <div className="mb-3">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <div className="w-2 h-2 bg-pink-500 rounded-full animate-pulse"></div>
+                  <h4 className="font-semibold text-xs text-pink-700">Caring Memory</h4>
+                </div>
+                <div className="bg-gradient-to-br from-pink-50 to-rose-50 p-2.5 rounded-lg border border-pink-200">
+                  {caringFacts.length > 0 ? (
+                    <div className="space-y-1.5">
+                      {caringFacts.map((fact, index) => (
+                        <div key={index} className="flex gap-1.5 text-xs bg-white/80 p-2 rounded-md border border-pink-100">
+                          <span className="text-pink-600 font-bold flex-shrink-0">{index + 1}.</span>
+                          <span className="text-gray-700 leading-relaxed">{fact}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4">
+                      <div className="text-2xl mb-1 opacity-50">💝</div>
+                      <p className="text-xs text-gray-400 italic">
+                        {username ? 'Learning about you...' : 'Set username'}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="mt-4 pt-3 border-t border-gray-200">
+                <p className="text-xs text-gray-500 text-center leading-relaxed">
+                  <span className="font-semibold">Thinking:</span> Agent 🧠 | <span className="font-semibold">Caring:</span> User 💝
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
