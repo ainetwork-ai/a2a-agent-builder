@@ -417,7 +417,7 @@ export default function HomeContent() {
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  className="flex-1 p-2.5 sm:p-4 text-xs sm:text-base border-2 border-gray-200 rounded-xl focus:outline-none focus:border-purple-400 focus:ring-2 sm:ring-4 focus:ring-purple-100 transition-all duration-200"
+                  className="flex-1 p-2.5 sm:p-4 text-base border-2 border-gray-200 rounded-xl focus:outline-none focus:border-purple-400 focus:ring-2 sm:ring-4 focus:ring-purple-100 transition-all duration-200"
                   placeholder="Type your message..."
                   disabled={isLoading}
                 />
