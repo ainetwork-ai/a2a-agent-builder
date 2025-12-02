@@ -155,60 +155,60 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-blue-600 text-white p-6 rounded-t-2xl">
+        <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-blue-600 text-white p-4 sm:p-6 rounded-t-2xl z-10">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold">✏️ Edit Agent</h2>
+            <h2 className="text-xl sm:text-2xl font-bold">✏️ Edit Agent</h2>
             <button
               onClick={onClose}
-              className="text-white hover:bg-white/20 rounded-lg p-2 transition"
+              className="text-white hover:bg-white/20 rounded-lg p-1.5 sm:p-2 transition w-8 h-8 flex items-center justify-center"
             >
-              ✕
+              <span className="text-xl">✕</span>
             </button>
           </div>
         </div>
 
         {/* Form */}
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* Name */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Agent Name *
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+              Agent Name
             </label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none transition text-gray-900 placeholder:text-gray-400"
+              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-gray-200 rounded-xl focus:border-purple-400 focus:ring-2 focus:ring-purple-100 focus:outline-none transition text-gray-900 placeholder:text-gray-400"
               placeholder="e.g., Socrates Web3 Tutor"
             />
           </div>
 
           {/* URL */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Agent URL *
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+              Agent URL
             </label>
             <input
               type="text"
               value={formData.url}
               onChange={(e) => setFormData(prev => ({ ...prev, url: e.target.value }))}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none transition text-gray-900 placeholder:text-gray-400"
+              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-gray-200 rounded-xl focus:border-purple-400 focus:ring-2 focus:ring-purple-100 focus:outline-none transition text-gray-900 placeholder:text-gray-400"
               placeholder="e.g., https://example.com/agents/my-agent"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Description *
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+              Description
             </label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none transition resize-none text-gray-900 placeholder:text-gray-400"
+              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-gray-200 rounded-xl focus:border-purple-400 focus:ring-2 focus:ring-purple-100 focus:outline-none transition resize-none text-gray-900 placeholder:text-gray-400"
               rows={3}
               placeholder="Describe what your agent does..."
             />
@@ -216,13 +216,13 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
 
           {/* System Prompt */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              System Prompt *
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+              System Prompt
             </label>
             <textarea
               value={formData.prompt}
               onChange={(e) => setFormData(prev => ({ ...prev, prompt: e.target.value }))}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none transition resize-none text-gray-900 placeholder:text-gray-400"
+              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-gray-200 rounded-xl focus:border-purple-400 focus:ring-2 focus:ring-purple-100 focus:outline-none transition resize-none text-gray-900 placeholder:text-gray-400"
               rows={6}
               placeholder="Define the agent's behavior, personality, and instructions..."
             />
@@ -230,30 +230,30 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
 
           {/* Skills */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-3">
-              Skills * (at least one required)
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+              Skills
             </label>
 
             {/* Existing Skills */}
-            <div className="space-y-3 mb-4">
+            <div className="space-y-2 sm:space-y-3 mb-3 sm:mb-4">
               {formData.skills.map(skill => (
-                <div key={skill.id} className="group p-4 bg-white rounded-lg border border-gray-200 hover:border-purple-300 hover:shadow-sm transition-all">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-1 space-y-2">
-                      <div className="font-semibold text-gray-800 text-base">{skill.name}</div>
-                      <div className="text-sm text-gray-600">{skill.description}</div>
+                <div key={skill.id} className="group p-3 sm:p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl border border-purple-100 hover:border-purple-300 hover:shadow-md transition-all">
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <div className="flex-1 space-y-1 sm:space-y-2">
+                      <div className="font-semibold text-purple-700 text-sm sm:text-base">{skill.name}</div>
+                      <div className="text-xs sm:text-sm text-gray-600">{skill.description}</div>
 
                       {/* Skill Tags - Inline */}
-                      <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                      <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 pt-1">
                         {skill.tags.map((tag, idx) => (
                           <span
                             key={idx}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 text-purple-700 rounded text-xs hover:bg-purple-100 transition-colors"
+                            className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-200 text-purple-700 rounded-full text-xs font-medium hover:bg-purple-300 transition-colors"
                           >
                             {tag}
                             <button
                               onClick={() => handleRemoveSkillTag(skill.id, tag)}
-                              className="hover:text-purple-900"
+                              className="hover:text-purple-900 text-xs"
                             >
                               ✕
                             </button>
@@ -298,7 +298,7 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
                     </div>
                     <button
                       onClick={() => handleRemoveSkill(skill.id)}
-                      className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-all"
+                      className="text-gray-400 hover:text-red-500 transition-all text-sm"
                     >
                       ✕
                     </button>
@@ -308,36 +308,36 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
             </div>
 
             {/* Add New Skill */}
-            <div className="group p-4 bg-gray-50 hover:bg-white rounded-lg border-2 border-dashed border-gray-300 hover:border-purple-300 transition-all">
-              <div className="space-y-2">
+            <div className="group p-3 sm:p-4 bg-gray-50 hover:bg-white rounded-xl border-2 border-dashed border-gray-300 hover:border-purple-300 transition-all">
+              <div className="space-y-1.5 sm:space-y-2">
                 <input
                   type="text"
                   value={newSkill.name}
                   onChange={(e) => setNewSkill({ ...newSkill, name: e.target.value })}
-                  className="w-full px-0 py-1 border-0 border-b border-transparent hover:border-gray-200 focus:border-purple-400 text-base font-semibold text-gray-800 focus:outline-none transition-colors bg-transparent placeholder:text-gray-400"
+                  className="w-full px-0 py-1 border-0 border-b border-transparent hover:border-gray-200 focus:border-purple-400 text-sm sm:text-base font-semibold text-gray-800 focus:outline-none transition-colors bg-transparent placeholder:text-gray-400"
                   placeholder="New skill name"
                 />
                 <input
                   type="text"
                   value={newSkill.description}
                   onChange={(e) => setNewSkill({ ...newSkill, description: e.target.value })}
-                  className="w-full px-0 py-1 border-0 text-sm text-gray-600 focus:outline-none bg-transparent placeholder:text-gray-400"
+                  className="w-full px-0 py-1 border-0 text-xs sm:text-sm text-gray-600 focus:outline-none bg-transparent placeholder:text-gray-400"
                   placeholder="Description"
                 />
 
                 {/* Tags for new skill */}
-                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 pt-1">
                   {newSkill.tags.map((tag, idx) => (
                     <span
                       key={idx}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 text-purple-700 rounded text-xs"
+                      className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-200 text-purple-700 rounded-full text-xs font-medium"
                     >
                       {tag}
                       <button
                         onClick={() => {
                           setNewSkill({ ...newSkill, tags: newSkill.tags.filter(t => t !== tag) });
                         }}
-                        className="hover:text-purple-900"
+                        className="hover:text-purple-900 text-xs"
                       >
                         ✕
                       </button>
@@ -385,7 +385,7 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
 
                 <button
                   onClick={handleAddSkill}
-                  className="mt-2 w-full py-2 text-purple-600 hover:text-purple-700 font-medium text-sm transition-colors"
+                  className="mt-2 w-full py-2 text-purple-600 hover:text-purple-700 font-semibold text-xs sm:text-sm transition-colors"
                 >
                   + Add Skill
                 </button>
@@ -395,20 +395,20 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
 
           {/* AI Model - Fixed to gemini-2.5-flash */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
               AI Model
             </label>
-            <div className="px-4 py-3 bg-gray-100 border-2 border-gray-200 rounded-lg text-gray-700">
+            <div className="px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-200 rounded-xl text-purple-700 font-semibold text-sm sm:text-base">
               🧠 gemini-2.5-flash
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 bg-gray-50 p-6 rounded-b-2xl border-t border-gray-200 flex gap-3">
+        <div className="sticky bottom-0 bg-gray-50 p-4 sm:p-6 rounded-b-2xl border-t border-gray-200 flex gap-2 sm:gap-3">
           <button
             onClick={onClose}
-            className="flex-1 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-semibold transition"
+            className="flex-1 py-2.5 sm:py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-semibold transition text-sm sm:text-base"
             disabled={isSaving}
           >
             Cancel
@@ -416,7 +416,7 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 font-semibold shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 py-2.5 sm:py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 font-semibold shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
           >
             {isSaving ? 'Saving...' : '💾 Save Changes'}
           </button>
