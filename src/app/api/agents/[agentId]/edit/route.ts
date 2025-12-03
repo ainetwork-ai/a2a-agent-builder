@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAgent, setAgent } from '@/lib/agentStore';
-import { Skill } from '@/types/agent';
+import { setIntents } from '@/lib/intentStore';
+import { Skill, Intent } from '@/types/agent';
 
 export async function PUT(
   request: NextRequest,
@@ -10,7 +11,7 @@ export async function PUT(
     const { agentId } = await params;
     const body = await request.json();
 
-    const { name, description, url, skills, modelProvider, modelName, prompt, address } = body;
+    const { name, description, url, skills, modelProvider, modelName, prompt, address, intents } = body;
 
     // Get existing agent
     const agent = await getAgent(agentId);
@@ -36,6 +37,13 @@ export async function PUT(
         { error: 'Missing required fields' },
         { status: 400 }
       );
+    }
+
+    // Update intents in separate Redis key if provided
+    if (intents && Array.isArray(intents)) {
+      console.log(`📌 Updating ${intents.length} intents for agent ${agentId}...`);
+      await setIntents(agentId, intents as Intent[]);
+      console.log('✅ Intents updated successfully');
     }
 
     // Update agent card

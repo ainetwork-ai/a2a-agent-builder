@@ -16,6 +16,8 @@ import { classifyIntent, getThinkingMemory, getUserCaring, getLastIntent } from 
 import { getBaseUrl } from '@/lib/url';
 import { autoEvolveAfterConversation } from '@/lib/thinkingEvolution';
 import { callLLM } from '@/lib/llmManager';
+import { getIntents } from '@/lib/intentStore';
+import { buildPromptWithIntents } from '@/lib/promptBuilder';
 import type { Skill } from '@/types/agent';
 
 const AGENT_CARD_PATH = ".well-known/agent.json";
@@ -258,27 +260,27 @@ ${a2a}
 }
 
 // Helper function to ensure agent has runtime handlers
-function ensureAgentHandlers(agent: StoredAgent, agentId: string): StoredAgent {
+async function ensureAgentHandlers(agent: StoredAgent, agentId: string): Promise<StoredAgent> {
   // If handlers already exist, return as is
   if (agent.executor && agent.requestHandler && agent.transportHandler) {
     return agent;
   }
 
+  // Load intents from redis and append them to the base prompt at runtime
+  const intents = await getIntents(agentId);
+  const fullPrompt = buildPromptWithIntents(agent.prompt, intents);
+
   // Recreate handlers from stored data
   const executor = new DynamicAgentExecutor(
     agentId,
-    agent.prompt,
+    fullPrompt,
     agent.modelProvider,
     agent.modelName,
     agent.thinking,
     agent.caring
   );
 
-  const requestHandler = new DefaultRequestHandler(
-    agent.card,
-    new InMemoryTaskStore(),
-    executor
-  );
+  const requestHandler = new DefaultRequestHandler(agent.card, new InMemoryTaskStore(), executor);
 
   const transportHandler = new JsonRpcTransportHandler(requestHandler);
 
@@ -286,7 +288,7 @@ function ensureAgentHandlers(agent: StoredAgent, agentId: string): StoredAgent {
     ...agent,
     executor,
     requestHandler,
-    transportHandler
+    transportHandler,
   };
 }
 
@@ -477,7 +479,7 @@ export async function POST(
     }
 
     // Ensure agent has runtime handlers (recreate if needed)
-    agent = ensureAgentHandlers(agent, agentId);
+    agent = await ensureAgentHandlers(agent, agentId);
 
     try {
       const body = await request.json();
