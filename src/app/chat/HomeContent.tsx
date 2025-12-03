@@ -417,21 +417,21 @@ export default function HomeContent() {
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  className="flex-1 px-3 md:px-3.5 lg:px-4 py-2 md:py-2.5 lg:py-3 text-base border-2 border-gray-200 rounded-xl focus:outline-none focus:border-purple-400 focus:ring-2 sm:ring-4 focus:ring-purple-100 transition-all duration-200"
+                  className="flex-1 min-w-0 px-3 md:px-3.5 lg:px-4 py-2 md:py-2.5 lg:py-3 text-base border-2 border-gray-200 rounded-xl focus:outline-none focus:border-purple-400 focus:ring-2 sm:ring-4 focus:ring-purple-100 transition-all duration-200"
                   placeholder="Type your message..."
                   disabled={isLoading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowMemoryModal(true)}
-                  className="lg:hidden px-3 md:px-3.5 py-2 md:py-2.5 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 font-bold rounded-xl hover:from-purple-200 hover:to-blue-200 transition shadow-md text-base flex items-center justify-center flex-shrink-0"
+                  className="lg:hidden px-2.5 md:px-3 py-2 md:py-2.5 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 font-bold rounded-xl hover:from-purple-200 hover:to-blue-200 transition shadow-md text-base flex items-center justify-center flex-shrink-0"
                   title="Agent Memory"
                 >
                   🧠
                 </button>
                 <button
                   type="submit"
-                  className="px-4 md:px-6 lg:px-8 py-2 md:py-2.5 lg:py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold rounded-xl hover:from-purple-700 hover:to-blue-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none text-base flex-shrink-0"
+                  className="px-3 md:px-4 lg:px-6 py-2 md:py-2.5 lg:py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold rounded-xl hover:from-purple-700 hover:to-blue-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none text-base flex-shrink-0 whitespace-nowrap"
                   disabled={isLoading || !input.trim()}
                 >
                   {isLoading ? '...' : 'Send'}
