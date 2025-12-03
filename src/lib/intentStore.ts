@@ -12,7 +12,7 @@ import { Intent } from "@/types/agent";
  * Get the Redis key for storing intents for a specific agent
  */
 function getIntentKey(agentId: string): string {
-  return `intents:${agentId}`;
+  return `intent:${agentId}`;
 }
 
 /**
