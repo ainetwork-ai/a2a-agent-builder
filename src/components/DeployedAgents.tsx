@@ -34,6 +34,7 @@ export default function DeployedAgents() {
 
   useEffect(() => {
     const fetchAgents = async () => {
+      setIsLoading(true);
       try {
         // Only fetch agents if wallet is connected
         if (!isConnected || !address) {
