@@ -571,8 +571,8 @@ export default function HomeContent() {
 
       {/* Mobile Memory Modal */}
       {showMemoryModal && (
-        <div className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end justify-center z-50">
-          <div className="bg-white rounded-t-3xl shadow-2xl w-full max-h-[70vh] overflow-hidden animate-slide-up">
+        <div className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between p-3 border-b border-purple-100 bg-gradient-to-r from-purple-50 to-blue-50">
               <h3 className="text-base font-bold text-gray-800 flex items-center gap-2">
@@ -588,7 +588,7 @@ export default function HomeContent() {
             </div>
 
             {/* Content - Scrollable */}
-            <div className="overflow-y-auto p-3" style={{ maxHeight: 'calc(70vh - 60px)' }}>
+            <div className="overflow-y-auto p-3" style={{ maxHeight: 'calc(80vh - 60px)' }}>
               {/* Username */}
               {username && (
                 <div className="mb-3 p-2 bg-gradient-to-r from-green-50 to-teal-50 rounded-lg border border-green-200">
