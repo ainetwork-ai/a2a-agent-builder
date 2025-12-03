@@ -1,11 +1,31 @@
 'use client';
 
+import { useState, useEffect, useRef } from 'react';
 import { useAccount, useDisconnect } from 'wagmi';
 import { ConnectWallet } from '@coinbase/onchainkit/wallet';
 
 export function WalletButton() {
   const { address, isConnected } = useAccount();
   const { disconnect } = useDisconnect();
+  const [showDisconnect, setShowDisconnect] = useState(false);
+  const buttonRef = useRef<HTMLDivElement>(null);
+
+  // Close disconnect button when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (buttonRef.current && !buttonRef.current.contains(event.target as Node)) {
+        setShowDisconnect(false);
+      }
+    };
+
+    if (showDisconnect) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showDisconnect]);
 
   if (!isConnected) {
     return (
@@ -37,19 +57,30 @@ export function WalletButton() {
   }
 
   return (
-    <div className="flex items-center gap-1 sm:gap-2">
-      <div className="px-2 sm:px-4 bg-white border-2 border-blue-200 rounded-lg h-[30px] sm:h-[40px] flex items-center">
-        <span className="text-xs sm:text-sm font-mono text-gray-700">
-          {address?.slice(0, 4)}...{address?.slice(-3)}
-        </span>
-      </div>
+    <div ref={buttonRef} className="relative">
       <button
-        onClick={() => disconnect()}
-        className="px-2 sm:px-4 h-[30px] sm:h-[40px] bg-red-500 text-white rounded-lg hover:bg-red-600 transition font-semibold shadow-md text-xs sm:text-base whitespace-nowrap flex items-center justify-center"
-        title="Disconnect Wallet"
+        onClick={() => {
+          if (showDisconnect) {
+            disconnect();
+            setShowDisconnect(false);
+          } else {
+            setShowDisconnect(true);
+          }
+        }}
+        className={`px-2.5 sm:px-4 h-[30px] sm:h-[40px] rounded-lg transition-all font-semibold shadow-md text-xs sm:text-base whitespace-nowrap flex items-center justify-center ${
+          showDisconnect
+            ? 'bg-red-500 text-white hover:bg-red-600'
+            : 'bg-white border-2 border-blue-200 text-gray-700 hover:border-blue-300'
+        }`}
+        title={showDisconnect ? 'Click to disconnect' : 'Connected wallet'}
       >
-        <span className="hidden sm:inline">Disconnect</span>
-        <span className="sm:hidden">✕</span>
+        {showDisconnect ? (
+          <span>Disconnect</span>
+        ) : (
+          <span className="font-mono">
+            {address?.slice(0, 4)}...{address?.slice(-3)}
+          </span>
+        )}
       </button>
     </div>
   );

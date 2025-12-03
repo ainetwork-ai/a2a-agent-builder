@@ -346,10 +346,10 @@ export default function HomeContent() {
             </div>
             <Link
               href="/builder"
-              className="px-2.5 sm:px-4 h-[30px] sm:h-[40px] bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition font-semibold shadow-md text-xs sm:text-base whitespace-nowrap flex items-center justify-center"
+              className="px-2.5 sm:px-4 h-[30px] sm:h-[40px] bg-white border-2 border-purple-600 text-purple-600 rounded-lg hover:bg-purple-50 transition font-semibold shadow-sm text-xs sm:text-base whitespace-nowrap flex items-center justify-center"
             >
-              <span className="hidden sm:inline">✨ Agent Builder</span>
-              <span className="sm:hidden">✨</span>
+              <span className="sm:hidden">Create</span>
+              <span className="hidden sm:inline">Create Agent</span>
             </Link>
           </div>
         </div>
