@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AgentBuilderForm, Skill, Intent } from '@/types/agent';
 
 interface AgentFormProps {
@@ -22,7 +22,7 @@ export function AgentForm({ initialData, onSubmit, onCancel, isSubmitting = fals
     setFormData(initialData);
   }, [initialData]);
 
-  const handleSkillChange = (skillId: string, field: keyof Skill, value: any) => {
+  const handleSkillChange = (skillId: string, field: keyof Skill, value: string | string[]) => {
     setFormData(prev => ({
       ...prev,
       skills: prev.skills.map(s => s.id === skillId ? { ...s, [field]: value } : s)
@@ -166,7 +166,7 @@ export function AgentForm({ initialData, onSubmit, onCancel, isSubmitting = fals
 
         <div>
           <label className="block text-base font-bold text-gray-900">System Prompt</label>
-          <p className="text-sm text-gray-500 mt-1">Define the agent's behavior, personality, and instructions</p>
+          <p className="text-sm text-gray-500 mt-1">Define the agent&apos;s behavior, personality, and instructions</p>
           <textarea
             value={formData.prompt}
             onChange={(e) => setFormData({ ...formData, prompt: e.target.value })}
@@ -186,7 +186,7 @@ export function AgentForm({ initialData, onSubmit, onCancel, isSubmitting = fals
       <div>
         <div className="mb-4">
           <label className="block text-lg font-bold text-gray-900">Skills</label>
-          <p className="text-sm text-gray-500 mt-1">Set up your agent's capabilities and tools</p>
+          <p className="text-sm text-gray-500 mt-1">Set up your agent&apos;s capabilities and tools</p>
         </div>
         
         <div className="space-y-3 mb-4">
