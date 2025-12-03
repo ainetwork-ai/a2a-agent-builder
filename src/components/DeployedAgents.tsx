@@ -5,6 +5,7 @@ import Link from 'next/link';
 import EditAgentModal from './EditAgentModal';
 import { WalletButton } from './WalletButton';
 import { useAccount } from 'wagmi';
+import { Bot } from 'lucide-react';
 
 interface DeployedAgent {
   id: string;
@@ -76,7 +77,7 @@ export default function DeployedAgents() {
       }
 
       // Remove agent from list
-      setAgents(prev => prev.filter(agent => agent.id !== agentId));
+      setAgents((prev) => prev.filter((agent) => agent.id !== agentId));
       alert('✅ Agent deleted successfully!');
     } catch (error) {
       console.error('Error deleting agent:', error);
@@ -84,7 +85,6 @@ export default function DeployedAgents() {
       alert(`❌ ${errorMessage}`);
     }
   };
-
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100">
@@ -103,11 +103,11 @@ export default function DeployedAgents() {
             <WalletButton />
             <Link
               href="/builder"
-              className="px-2.5 sm:px-4 h-[30px] sm:h-[40px] bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition font-semibold shadow-md text-xs sm:text-base whitespace-nowrap flex items-center justify-center"
+              className="px-2.5 sm:px-4 h-[30px] sm:h-[40px] bg-white border-2 border-purple-600 text-purple-600 rounded-lg hover:bg-purple-50 transition font-semibold shadow-sm text-xs sm:text-base whitespace-nowrap flex items-center justify-center"
               title="Create Agent"
             >
-              <span className="hidden sm:inline">✨ Create Agent</span>
-              <span className="sm:hidden">✨</span>
+              <span className="sm:hidden">Create</span>
+              <span className="hidden sm:inline">Create Agent</span>
             </Link>
           </div>
         </div>
@@ -147,7 +147,7 @@ export default function DeployedAgents() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {agents.map(agent => (
+            {agents.map((agent) => (
               <div
                 key={agent.id}
                 className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-xl border border-blue-100 hover:shadow-2xl hover:border-blue-300 transition-all duration-300 hover:-translate-y-1"
@@ -169,7 +169,7 @@ export default function DeployedAgents() {
                 {/* Skills */}
                 <div className="mb-4">
                   <div className="flex flex-wrap gap-1.5">
-                    {agent.skills.slice(0, 3).map(skill => (
+                    {agent.skills.slice(0, 3).map((skill) => (
                       <span
                         key={skill.id}
                         className="px-2 py-1 bg-purple-100 text-purple-700 rounded-md text-xs font-semibold"
@@ -189,7 +189,9 @@ export default function DeployedAgents() {
                 <div className="bg-gray-50 p-3 rounded-lg mb-4">
                   <div className="flex items-center gap-2 text-xs text-gray-600">
                     <span className="font-semibold">🧠 Model:</span>
-                    <span>{agent.modelProvider} / {agent.modelName}</span>
+                    <span>
+                      {agent.modelProvider} / {agent.modelName}
+                    </span>
                   </div>
                 </div>
 
@@ -234,8 +236,8 @@ export default function DeployedAgents() {
         <div className="mt-12 text-center">
           <div className="inline-block bg-white/80 backdrop-blur-sm px-6 py-4 rounded-xl shadow-md border border-purple-100">
             <p className="text-sm text-gray-600">
-              <span className="font-semibold text-purple-600">A2A Protocol v0.3.0</span>
-              {' '} • Agent-to-Agent Communication Standard
+              <span className="font-semibold text-purple-600">A2A Protocol v0.3.0</span> •
+              Agent-to-Agent Communication Standard
             </p>
           </div>
         </div>

@@ -7,6 +7,7 @@ import { SendMessageSuccessResponse } from "@a2a-js/sdk";
 import { Message, MessageSendParams, TextPart } from "@a2a-js/sdk";
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { Archive, Send } from 'lucide-react';
 
 const DEFAULT_AGENT_ID = 'socrates-web3-tutor';
 const A2A_API_PREFIX = "/api/agents";
@@ -346,10 +347,10 @@ export default function HomeContent() {
             </div>
             <Link
               href="/builder"
-              className="px-2.5 sm:px-4 h-[30px] sm:h-[40px] bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition font-semibold shadow-md text-xs sm:text-base whitespace-nowrap flex items-center justify-center"
+              className="px-2.5 sm:px-4 h-[30px] sm:h-[40px] bg-white border-2 border-purple-600 text-purple-600 rounded-lg hover:bg-purple-50 transition font-semibold shadow-sm text-xs sm:text-base whitespace-nowrap flex items-center justify-center"
             >
-              <span className="hidden sm:inline">✨ Agent Builder</span>
-              <span className="sm:hidden">✨</span>
+              <span className="sm:hidden">Create</span>
+              <span className="hidden sm:inline">Create Agent</span>
             </Link>
           </div>
         </div>
@@ -411,30 +412,37 @@ export default function HomeContent() {
               <div ref={messagesEndRef} />
             </div>
 
-            <form onSubmit={handleSubmit} className="p-4 sm:p-6 border-t border-purple-100 bg-white/80 backdrop-blur-sm">
+            <form onSubmit={handleSubmit} className="p-3 sm:p-4 md:p-5 lg:p-6 border-t border-purple-100 bg-white/80 backdrop-blur-sm">
               <div className="flex gap-2">
                 <input
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  className="flex-1 p-2.5 sm:p-4 text-xs sm:text-base border-2 border-gray-200 rounded-xl focus:outline-none focus:border-purple-400 focus:ring-2 sm:ring-4 focus:ring-purple-100 transition-all duration-200"
+                  className="flex-1 min-w-0 px-3 md:px-3.5 lg:px-4 py-2 md:py-2.5 lg:py-3 text-base border-2 border-gray-200 rounded-xl focus:outline-none focus:border-purple-400 focus:ring-2 sm:ring-4 focus:ring-purple-100 transition-all duration-200"
                   placeholder="Type your message..."
                   disabled={isLoading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowMemoryModal(true)}
-                  className="lg:hidden px-2.5 py-2.5 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 font-bold rounded-xl hover:from-purple-200 hover:to-blue-200 transition shadow-md text-base flex items-center justify-center"
+                  className="lg:hidden px-2.5 md:px-3 py-2 md:py-2.5 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 font-bold rounded-xl hover:from-purple-200 hover:to-blue-200 transition shadow-md flex items-center justify-center flex-shrink-0"
                   title="Agent Memory"
                 >
-                  🧠
+                  <Archive className="w-5 h-5" />
                 </button>
                 <button
                   type="submit"
-                  className="px-3 sm:px-8 py-2.5 sm:py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold rounded-xl hover:from-purple-700 hover:to-blue-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none text-xs sm:text-base"
+                  className="px-3 md:px-4 lg:px-6 py-2 md:py-2.5 lg:py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold rounded-xl hover:from-purple-700 hover:to-blue-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none text-xs sm:text-base flex-shrink-0 whitespace-nowrap flex items-center justify-center gap-1.5"
                   disabled={isLoading || !input.trim()}
                 >
-                  {isLoading ? '...' : 'Send'}
+                  {isLoading ? (
+                    <span className="flex items-center">...</span>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <span className="hidden sm:inline">Send</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
@@ -571,8 +579,8 @@ export default function HomeContent() {
 
       {/* Mobile Memory Modal */}
       {showMemoryModal && (
-        <div className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end justify-center z-50">
-          <div className="bg-white rounded-t-3xl shadow-2xl w-full max-h-[70vh] overflow-hidden animate-slide-up">
+        <div className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between p-3 border-b border-purple-100 bg-gradient-to-r from-purple-50 to-blue-50">
               <h3 className="text-base font-bold text-gray-800 flex items-center gap-2">
@@ -588,7 +596,7 @@ export default function HomeContent() {
             </div>
 
             {/* Content - Scrollable */}
-            <div className="overflow-y-auto p-3" style={{ maxHeight: 'calc(70vh - 60px)' }}>
+            <div className="overflow-y-auto p-3" style={{ maxHeight: 'calc(80vh - 60px)' }}>
               {/* Username */}
               {username && (
                 <div className="mb-3 p-2 bg-gradient-to-r from-green-50 to-teal-50 rounded-lg border border-green-200">

@@ -218,7 +218,7 @@ export default function AgentBuilder() {
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              className="w-full p-3 sm:p-4 border-2 border-gray-200 rounded-xl h-32 sm:h-40 focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 resize-none text-sm sm:text-base text-gray-900 placeholder:text-gray-400"
+              className="w-full p-3 sm:p-4 border-2 border-gray-200 rounded-xl h-32 sm:h-40 focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-200 resize-none text-base text-gray-900 placeholder:text-gray-400"
               placeholder="Example: Create an AI tutor that teaches Web3 using the Socratic method"
             />
           </div>
@@ -306,7 +306,7 @@ export default function AgentBuilder() {
                       type="text"
                       value={generatedForm.name}
                       onChange={(e) => setGeneratedForm({ ...generatedForm, name: e.target.value })}
-                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-purple-400 focus:ring-2 focus:ring-purple-100 focus:outline-none text-sm sm:text-base text-gray-900 placeholder:text-gray-400"
+                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-purple-400 focus:ring-2 focus:ring-purple-100 focus:outline-none text-base text-gray-900 placeholder:text-gray-400"
                     />
                   </div>
 
@@ -315,7 +315,7 @@ export default function AgentBuilder() {
                     <textarea
                       value={generatedForm.description}
                       onChange={(e) => setGeneratedForm({ ...generatedForm, description: e.target.value })}
-                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-purple-400 focus:ring-2 focus:ring-purple-100 focus:outline-none resize-none text-sm sm:text-base text-gray-900 placeholder:text-gray-400"
+                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-purple-400 focus:ring-2 focus:ring-purple-100 focus:outline-none resize-none text-base text-gray-900 placeholder:text-gray-400"
                       rows={3}
                     />
                   </div>
@@ -336,7 +336,7 @@ export default function AgentBuilder() {
                                   );
                                   setGeneratedForm({ ...generatedForm, skills: updatedSkills });
                                 }}
-                                className="w-full px-2 py-1 border-0 border-b-2 border-transparent hover:border-purple-200 focus:border-purple-400 text-sm sm:text-base font-semibold text-purple-700 focus:outline-none transition-colors bg-transparent placeholder:text-gray-400"
+                                className="w-full px-2 py-1 border-0 border-b-2 border-transparent hover:border-purple-200 focus:border-purple-400 text-base font-semibold text-purple-700 focus:outline-none transition-colors bg-transparent placeholder:text-gray-400"
                                 placeholder="Skill name"
                               />
                               <input
@@ -348,7 +348,7 @@ export default function AgentBuilder() {
                                   );
                                   setGeneratedForm({ ...generatedForm, skills: updatedSkills });
                                 }}
-                                className="w-full px-2 py-1 border-0 text-xs sm:text-sm text-gray-600 focus:outline-none bg-transparent placeholder:text-gray-400"
+                                className="w-full px-2 py-1 border-0 text-base text-gray-600 focus:outline-none bg-transparent placeholder:text-gray-400"
                                 placeholder="Description"
                               />
 
@@ -441,14 +441,14 @@ export default function AgentBuilder() {
                           type="text"
                           value={skill.name}
                           onChange={(e) => setSkill({ ...skill, name: e.target.value })}
-                          className="w-full px-2 py-1 border-0 border-b-2 border-transparent hover:border-purple-200 focus:border-purple-400 text-sm sm:text-base font-semibold text-gray-700 focus:outline-none transition-colors bg-transparent placeholder:text-gray-400"
+                          className="w-full px-2 py-1 border-0 border-b-2 border-transparent hover:border-purple-200 focus:border-purple-400 text-base font-semibold text-gray-700 focus:outline-none transition-colors bg-transparent placeholder:text-gray-400"
                           placeholder="New skill name"
                         />
                         <input
                           type="text"
                           value={skill.description}
                           onChange={(e) => setSkill({ ...skill, description: e.target.value })}
-                          className="w-full px-2 py-1 border-0 text-xs sm:text-sm text-gray-600 focus:outline-none bg-transparent placeholder:text-gray-400"
+                          className="w-full px-2 py-1 border-0 text-base text-gray-600 focus:outline-none bg-transparent placeholder:text-gray-400"
                           placeholder="Description"
                         />
 

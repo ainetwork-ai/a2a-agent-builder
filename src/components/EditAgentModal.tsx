@@ -181,7 +181,7 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
               type="text"
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-gray-200 rounded-xl focus:border-purple-400 focus:ring-2 focus:ring-purple-100 focus:outline-none transition text-gray-900 placeholder:text-gray-400"
+              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-base border-2 border-gray-200 rounded-xl focus:border-purple-400 focus:ring-2 focus:ring-purple-100 focus:outline-none transition text-gray-900 placeholder:text-gray-400"
               placeholder="e.g., Socrates Web3 Tutor"
             />
           </div>
@@ -195,7 +195,7 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
               type="text"
               value={formData.url}
               onChange={(e) => setFormData(prev => ({ ...prev, url: e.target.value }))}
-              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-gray-200 rounded-xl focus:border-purple-400 focus:ring-2 focus:ring-purple-100 focus:outline-none transition text-gray-900 placeholder:text-gray-400"
+              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-base border-2 border-gray-200 rounded-xl focus:border-purple-400 focus:ring-2 focus:ring-purple-100 focus:outline-none transition text-gray-900 placeholder:text-gray-400"
               placeholder="e.g., https://example.com/agents/my-agent"
             />
           </div>
@@ -208,7 +208,7 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
             <textarea
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-gray-200 rounded-xl focus:border-purple-400 focus:ring-2 focus:ring-purple-100 focus:outline-none transition resize-none text-gray-900 placeholder:text-gray-400"
+              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-base border-2 border-gray-200 rounded-xl focus:border-purple-400 focus:ring-2 focus:ring-purple-100 focus:outline-none transition resize-none text-gray-900 placeholder:text-gray-400"
               rows={3}
               placeholder="Describe what your agent does..."
             />
@@ -222,7 +222,7 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
             <textarea
               value={formData.prompt}
               onChange={(e) => setFormData(prev => ({ ...prev, prompt: e.target.value }))}
-              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-gray-200 rounded-xl focus:border-purple-400 focus:ring-2 focus:ring-purple-100 focus:outline-none transition resize-none text-gray-900 placeholder:text-gray-400"
+              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-base border-2 border-gray-200 rounded-xl focus:border-purple-400 focus:ring-2 focus:ring-purple-100 focus:outline-none transition resize-none text-gray-900 placeholder:text-gray-400"
               rows={6}
               placeholder="Define the agent's behavior, personality, and instructions..."
             />
@@ -240,7 +240,7 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
                 <div key={skill.id} className="group p-3 sm:p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl border border-purple-100 hover:border-purple-300 hover:shadow-md transition-all">
                   <div className="flex items-start gap-2 sm:gap-3">
                     <div className="flex-1 space-y-1 sm:space-y-2">
-                      <div className="font-semibold text-purple-700 text-sm sm:text-base">{skill.name}</div>
+                      <div className="font-semibold text-purple-700 text-base">{skill.name}</div>
                       <div className="text-xs sm:text-sm text-gray-600">{skill.description}</div>
 
                       {/* Skill Tags - Inline */}
@@ -314,14 +314,14 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
                   type="text"
                   value={newSkill.name}
                   onChange={(e) => setNewSkill({ ...newSkill, name: e.target.value })}
-                  className="w-full px-0 py-1 border-0 border-b border-transparent hover:border-gray-200 focus:border-purple-400 text-sm sm:text-base font-semibold text-gray-800 focus:outline-none transition-colors bg-transparent placeholder:text-gray-400"
+                  className="w-full px-0 py-1 border-0 border-b border-transparent hover:border-gray-200 focus:border-purple-400 text-base font-semibold text-gray-800 focus:outline-none transition-colors bg-transparent placeholder:text-gray-400"
                   placeholder="New skill name"
                 />
                 <input
                   type="text"
                   value={newSkill.description}
                   onChange={(e) => setNewSkill({ ...newSkill, description: e.target.value })}
-                  className="w-full px-0 py-1 border-0 text-xs sm:text-sm text-gray-600 focus:outline-none bg-transparent placeholder:text-gray-400"
+                  className="w-full px-0 py-1 border-0 text-base text-gray-600 focus:outline-none bg-transparent placeholder:text-gray-400"
                   placeholder="Description"
                 />
 
@@ -398,7 +398,7 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
               AI Model
             </label>
-            <div className="px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-200 rounded-xl text-purple-700 font-semibold text-sm sm:text-base">
+            <div className="px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-200 rounded-xl text-purple-700 font-semibold text-base">
               🧠 gemini-2.5-flash
             </div>
           </div>
@@ -408,7 +408,7 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
         <div className="sticky bottom-0 bg-gray-50 p-4 sm:p-6 rounded-b-2xl border-t border-gray-200 flex gap-2 sm:gap-3">
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 sm:py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-semibold transition text-sm sm:text-base"
+            className="flex-1 py-2.5 sm:py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-semibold transition text-base"
             disabled={isSaving}
           >
             Cancel
@@ -416,7 +416,7 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="flex-1 py-2.5 sm:py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 font-semibold shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+            className="flex-1 py-2.5 sm:py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 font-semibold shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed text-base"
           >
             {isSaving ? 'Saving...' : '💾 Save Changes'}
           </button>
