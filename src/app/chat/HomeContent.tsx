@@ -7,6 +7,7 @@ import { SendMessageSuccessResponse } from "@a2a-js/sdk";
 import { Message, MessageSendParams, TextPart } from "@a2a-js/sdk";
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { Archive, Send } from 'lucide-react';
 
 const DEFAULT_AGENT_ID = 'socrates-web3-tutor';
 const A2A_API_PREFIX = "/api/agents";
@@ -424,17 +425,24 @@ export default function HomeContent() {
                 <button
                   type="button"
                   onClick={() => setShowMemoryModal(true)}
-                  className="lg:hidden px-2.5 md:px-3 py-2 md:py-2.5 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 font-bold rounded-xl hover:from-purple-200 hover:to-blue-200 transition shadow-md text-base flex items-center justify-center flex-shrink-0"
+                  className="lg:hidden px-2.5 md:px-3 py-2 md:py-2.5 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 font-bold rounded-xl hover:from-purple-200 hover:to-blue-200 transition shadow-md flex items-center justify-center flex-shrink-0"
                   title="Agent Memory"
                 >
-                  🧠
+                  <Archive className="w-5 h-5" />
                 </button>
                 <button
                   type="submit"
-                  className="px-3 md:px-4 lg:px-6 py-2 md:py-2.5 lg:py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold rounded-xl hover:from-purple-700 hover:to-blue-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none text-base flex-shrink-0 whitespace-nowrap"
+                  className="px-3 md:px-4 lg:px-6 py-2 md:py-2.5 lg:py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold rounded-xl hover:from-purple-700 hover:to-blue-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none text-xs sm:text-base flex-shrink-0 whitespace-nowrap flex items-center justify-center gap-1.5"
                   disabled={isLoading || !input.trim()}
                 >
-                  {isLoading ? '...' : 'Send'}
+                  {isLoading ? (
+                    <span className="flex items-center">...</span>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <span className="hidden sm:inline">Send</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
