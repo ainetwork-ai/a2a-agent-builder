@@ -5,7 +5,7 @@ import Link from 'next/link';
 import EditAgentModal from './EditAgentModal';
 import { WalletButton } from './WalletButton';
 import { useAccount } from 'wagmi';
-import { Bot } from 'lucide-react';
+import { Intent } from '@/types/agent';
 
 interface DeployedAgent {
   id: string;
@@ -21,6 +21,7 @@ interface DeployedAgent {
     description: string;
     tags: string[];
   }>;
+  intents?: Intent[];
   deployed: boolean;
   creator?: string;
 }
@@ -33,6 +34,7 @@ export default function DeployedAgents() {
 
   useEffect(() => {
     const fetchAgents = async () => {
+      setIsLoading(true);
       try {
         // Only fetch agents if wallet is connected
         if (!isConnected || !address) {
