@@ -7,6 +7,7 @@ import { WalletButton } from './WalletButton';
 import { useAccount } from 'wagmi';
 import { Intent } from '@/types/agent';
 import { getDisplayModelName } from '@/lib/utils/modelUtils';
+import { useToast } from '@/contexts/ToastContext';
 
 interface DeployedAgent {
   id: string;
@@ -29,6 +30,7 @@ interface DeployedAgent {
 
 export default function DeployedAgents() {
   const { address, isConnected } = useAccount();
+  const toast = useToast();
   const [agents, setAgents] = useState<DeployedAgent[]>([]);
   const [editingAgent, setEditingAgent] = useState<DeployedAgent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -59,7 +61,7 @@ export default function DeployedAgents() {
 
   const deleteAgent = async (agentId: string) => {
     if (!isConnected || !address) {
-      alert('⚠️ Please connect your wallet to delete an agent.');
+      toast.warning('Please connect your wallet to delete an agent.');
       return;
     }
 
@@ -81,11 +83,11 @@ export default function DeployedAgents() {
 
       // Remove agent from list
       setAgents((prev) => prev.filter((agent) => agent.id !== agentId));
-      alert('✅ Agent deleted successfully!');
+      toast.success('Agent deleted successfully!');
     } catch (error) {
       console.error('Error deleting agent:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      alert(`❌ ${errorMessage}`);
+      toast.error(errorMessage);
     }
   };
 
@@ -153,7 +155,7 @@ export default function DeployedAgents() {
             {agents.map((agent) => (
               <div
                 key={agent.id}
-                className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-xl border border-blue-100 hover:shadow-2xl hover:border-blue-300 transition-all duration-300 hover:-translate-y-1"
+                className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-xl border border-blue-100 transition-[box-shadow,border-color,transform] duration-300 md:hover:shadow-2xl md:hover:border-blue-300 md:hover:-translate-y-1"
               >
                 {/* Header */}
                 <div className="flex items-start justify-between mb-4">
@@ -202,7 +204,7 @@ export default function DeployedAgents() {
                 <div className="space-y-2">
                   <Link
                     href={`/chat?agentUrl=${encodeURIComponent(agent.url)}`}
-                    className="block w-full py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 font-semibold shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 text-center"
+                    className="block w-full py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold shadow-md transition-[box-shadow,transform] duration-200 active:scale-95 text-center md:hover:from-purple-600 md:hover:to-pink-600 md:hover:shadow-lg md:hover:-translate-y-0.5"
                   >
                     💬 Start Chat
                   </Link>
@@ -211,7 +213,7 @@ export default function DeployedAgents() {
                     onClick={() => {
                       const agentCardUrl = `${agent.url}/.well-known/agent.json`;
                       navigator.clipboard.writeText(agentCardUrl);
-                      alert('Agent Card URL copied to clipboard!');
+                      toast.success('Agent Card URL copied to clipboard!');
                     }}
                     className="w-full py-2 bg-white border-2 border-gray-200 text-gray-700 rounded-lg hover:border-purple-300 hover:bg-purple-50 font-semibold transition-all duration-200 text-sm"
                   >

@@ -298,7 +298,7 @@ export default function HomeContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100">
+    <div className="bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 overflow-hidden flex flex-col" style={{ height: '100dvh' }}>
       {/* Username Setup Modal */}
       {showUsernameModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
@@ -319,7 +319,7 @@ export default function HomeContent() {
               />
               <button
                 type="submit"
-                className="w-full px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold rounded-xl hover:from-purple-700 hover:to-blue-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                className="w-full px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold rounded-xl shadow-lg transition-[box-shadow,transform] duration-200 active:scale-95 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:active:scale-100 md:hover:from-purple-700 md:hover:to-blue-700 md:hover:shadow-xl md:hover:-translate-y-0.5"
                 disabled={!usernameInput.trim()}
               >
                 Start Chatting
@@ -333,7 +333,7 @@ export default function HomeContent() {
       )}
 
       {/* Navigation Bar */}
-      <nav className="bg-white/80 backdrop-blur-md border-b border-purple-100 sticky top-0 z-50 shadow-sm">
+      <nav className="bg-white/80 backdrop-blur-md border-b border-purple-100 shadow-sm flex-shrink-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 py-3 sm:py-4 flex items-center justify-between gap-2">
           <Link href="/" className="flex items-center gap-2 sm:gap-3 group min-w-0 flex-shrink">
             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
@@ -356,8 +356,8 @@ export default function HomeContent() {
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto p-4 sm:p-8">
-        <div className="flex gap-4" style={{ height: 'calc(100vh - 120px)' }}>
+      <div className="flex-1 max-w-7xl mx-auto p-4 sm:p-8 overflow-hidden">
+        <div className="flex gap-4 h-full">
           {/* Chat Area */}
           <div className="flex-1 bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-purple-100 overflow-hidden">
             <div className="flex flex-col h-full">
@@ -432,7 +432,7 @@ export default function HomeContent() {
                 </button>
                 <button
                   type="submit"
-                  className="px-3 md:px-4 lg:px-6 py-2 md:py-2.5 lg:py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold rounded-xl hover:from-purple-700 hover:to-blue-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none text-xs sm:text-base flex-shrink-0 whitespace-nowrap flex items-center justify-center gap-1.5"
+                  className="px-3 md:px-4 lg:px-6 py-2 md:py-2.5 lg:py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold rounded-xl shadow-lg transition-[box-shadow,transform] duration-200 active:scale-95 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:active:scale-100 disabled:shadow-none text-xs sm:text-base flex-shrink-0 whitespace-nowrap flex items-center justify-center gap-1.5 md:hover:from-purple-700 md:hover:to-blue-700 md:hover:shadow-xl md:hover:-translate-y-0.5"
                   disabled={isLoading || !input.trim()}
                 >
                   {isLoading ? (

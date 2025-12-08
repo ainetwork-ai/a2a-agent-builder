@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Skill, AgentBuilderForm, Intent } from '@/types/agent';
 import { useAccount } from 'wagmi';
 import { AgentForm } from './AgentForm';
+import { useToast } from '@/contexts/ToastContext';
 
 interface EditAgentModalProps {
   isOpen: boolean;
@@ -24,6 +25,7 @@ interface EditAgentModalProps {
 
 export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: EditAgentModalProps) {
   const { address } = useAccount();
+  const toast = useToast();
   const [formData, setFormData] = useState({
     name: agent.name,
     description: agent.description,
@@ -50,7 +52,7 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
         prompt: agent.prompt,
       });
     }
-  }, [isOpen, agent]);
+  }, [isOpen, agent.id]); // agent 전체 대신 agent.id만 의존성으로
 
   const handleSave = async (data: AgentBuilderForm & { url?: string }) => {
     setIsSaving(true);
@@ -69,12 +71,12 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
         throw new Error(errorData.error || 'Failed to update agent');
       }
 
-      alert('✅ Agent updated successfully!');
+      toast.success('Agent updated successfully!');
       onSuccess();
       onClose();
     } catch (error) {
       console.error('Error updating agent:', error);
-      alert('❌ Failed to update agent. Please try again.');
+      toast.error('Failed to update agent. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -83,8 +85,14 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+    <div
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-blue-600 text-white p-4 sm:p-6 rounded-t-2xl z-10">
           <div className="flex items-center justify-between">

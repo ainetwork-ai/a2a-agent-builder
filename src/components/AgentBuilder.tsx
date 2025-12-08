@@ -10,11 +10,13 @@ import slugify from 'slugify';
 import { AgentForm } from './AgentForm';
 import { getDisplayModelName } from '@/lib/utils/modelUtils';
 import { CopyButton } from './CopyButton';
+import { useToast } from '@/contexts/ToastContext';
 
 type BuilderMode = 'ai' | 'manual';
 
 export default function AgentBuilder() {
   const { address, isConnected } = useAccount();
+  const toast = useToast();
   const [agents, setAgents] = useState<AgentConfig[]>([]);
   const [mode, setMode] = useState<BuilderMode>('ai');
   const [prompt, setPrompt] = useState('');
@@ -63,7 +65,7 @@ export default function AgentBuilder() {
 
   const generateAgentFromPrompt = async () => {
     if (!prompt.trim()) {
-      alert('Please enter a prompt');
+      toast.warning('Please enter a prompt');
       return;
     }
 
@@ -85,7 +87,7 @@ export default function AgentBuilder() {
     } catch (error) {
       console.error('Error generating agent:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      alert(`Failed to generate agent: ${errorMessage}\n\nPlease check the server console for detailed logs.`);
+      toast.error(`Failed to generate agent: ${errorMessage}\n\nPlease check the server console for detailed logs.`);
     } finally {
       setIsGenerating(false);
     }
@@ -110,7 +112,7 @@ export default function AgentBuilder() {
     } catch (error) {
       console.error('Error auto-completing agent:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      alert(`Failed to auto-complete agent: ${errorMessage}\n\nPlease check the server console for detailed logs.`);
+      toast.error(`Failed to auto-complete agent: ${errorMessage}\n\nPlease check the server console for detailed logs.`);
     } finally {
       setIsGenerating(false);
     }
@@ -159,6 +161,9 @@ export default function AgentBuilder() {
     };
 
     setAgents(prev => [...prev, newAgent]);
+
+    // Reset deploying state
+    setDeployingAgentId(null);
 
     // Reset form based on mode
     if (mode === 'ai') {
@@ -211,7 +216,7 @@ export default function AgentBuilder() {
   const deployAgent = async (agent: AgentConfig) => {
     // Check wallet connection
     if (!isConnected || !address) {
-      alert('⚠️ Please connect your wallet to deploy an agent.');
+      toast.warning('Please connect your wallet to deploy an agent.');
       return;
     }
 
@@ -241,7 +246,7 @@ export default function AgentBuilder() {
     } catch (error) {
       console.error('Error deploying agent:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      alert(`❌ Failed to deploy agent: ${errorMessage}\n\nPlease check the server console for detailed logs.`);
+      toast.error(`Failed to deploy agent: ${errorMessage}\n\nPlease check the server console for detailed logs.`);
     } finally {
       setDeployingAgentId(null);
     }
@@ -331,7 +336,7 @@ export default function AgentBuilder() {
                 <button
                   onClick={generateAgentFromPrompt}
                   disabled={isGenerating || !prompt.trim()}
-                  className="w-full py-3 sm:py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 font-bold text-base sm:text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
+                  className="w-full py-3 sm:py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-bold text-base sm:text-lg shadow-lg transition-[box-shadow,transform] duration-200 active:scale-95 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:active:scale-100 disabled:shadow-none md:hover:from-purple-700 md:hover:to-blue-700 md:hover:shadow-xl md:hover:-translate-y-0.5"
                 >
                   {isGenerating ? (
                     <span className="flex items-center justify-center gap-2">
@@ -444,7 +449,7 @@ export default function AgentBuilder() {
                     <button
                       onClick={() => deployAgent(agent)}
                       disabled={agent.deployed || deployingAgentId === agent.id}
-                      className={`flex-1 min-w-[100px] px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg font-semibold shadow-md transition-all duration-200 text-sm sm:text-base ${
+                      className={`flex-1 min-w-[100px] px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg font-semibold shadow-md transition-all duration-200 text-xs sm:text-sm ${
                         agent.deployed || deployingAgentId === agent.id
                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                           : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600 hover:shadow-lg transform hover:-translate-y-0.5'
@@ -462,21 +467,21 @@ export default function AgentBuilder() {
                     </button>
                     <button
                       onClick={() => exportAgent(agent)}
-                      className="flex-1 min-w-[100px] px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg hover:from-blue-600 hover:to-indigo-600 font-semibold shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 text-sm sm:text-base"
+                      className="flex-1 min-w-[100px] px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg font-semibold shadow-md transition-[box-shadow,transform] duration-200 active:scale-95 text-xs sm:text-sm md:hover:from-blue-600 md:hover:to-indigo-600 md:hover:shadow-lg md:hover:-translate-y-0.5"
                     >
                       💾 Export
                     </button>
                     {agent.deployed ? (
                       <a
                         href={`/chat?agentUrl=${encodeURIComponent(agent.url)}`}
-                        className="flex-1 min-w-[100px] px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 font-semibold shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 text-center text-sm sm:text-base"
+                        className="flex-1 min-w-[100px] px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold shadow-md transition-[box-shadow,transform] duration-200 active:scale-95 text-xs sm:text-sm flex items-center justify-center md:hover:from-purple-600 md:hover:to-pink-600 md:hover:shadow-lg md:hover:-translate-y-0.5"
                       >
                         💬 Chat
                       </a>
                     ) : (
                       <button
                         disabled
-                        className="flex-1 min-w-[100px] px-3 sm:px-4 py-2 sm:py-2.5 bg-gray-300 text-gray-500 rounded-lg font-semibold cursor-not-allowed text-sm sm:text-base"
+                        className="flex-1 min-w-[100px] px-3 sm:px-4 py-2.5 sm:py-3 bg-gray-300 text-gray-500 rounded-lg font-semibold cursor-not-allowed text-xs sm:text-sm flex items-center justify-center"
                         title="Deploy the agent first to test chat"
                       >
                         💬 Chat
