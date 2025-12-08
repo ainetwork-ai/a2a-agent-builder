@@ -9,6 +9,7 @@ import { transliterate } from 'transliteration';
 import slugify from 'slugify';
 import { AgentForm } from './AgentForm';
 import { getDisplayModelName } from '@/lib/utils/modelUtils';
+import { CopyButton } from './CopyButton';
 
 type BuilderMode = 'ai' | 'manual';
 
@@ -521,34 +522,22 @@ export default function AgentBuilder() {
             <div className="space-y-3">
               <div>
                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-2">Base URL</label>
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(deployedAgent.url);
-                    alert('Base URL copied to clipboard!');
-                  }}
-                  className="w-full bg-gray-50 hover:bg-gray-100 border-2 border-gray-200 hover:border-purple-300 rounded-lg p-3 text-left transition-all group"
-                >
+                <div className="w-full bg-gray-50 border-2 border-gray-200 rounded-lg p-3">
                   <div className="flex items-center justify-between gap-2">
                     <code className="text-xs sm:text-sm text-gray-700 break-all flex-1">{deployedAgent.url}</code>
-                    <span className="text-gray-400 group-hover:text-purple-600 text-sm flex-shrink-0">📋 Copy</span>
+                    <CopyButton text={deployedAgent.url} iconSize={20} className="flex-shrink-0" />
                   </div>
-                </button>
+                </div>
               </div>
 
               <div>
                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-2">Agent Card URL</label>
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(deployedAgent.cardUrl);
-                    alert('Agent Card URL copied to clipboard!');
-                  }}
-                  className="w-full bg-gray-50 hover:bg-gray-100 border-2 border-gray-200 hover:border-purple-300 rounded-lg p-3 text-left transition-all group"
-                >
+                <div className="w-full bg-gray-50 border-2 border-gray-200 rounded-lg p-3">
                   <div className="flex items-center justify-between gap-2">
                     <code className="text-xs sm:text-sm text-gray-700 break-all flex-1">{deployedAgent.cardUrl}</code>
-                    <span className="text-gray-400 group-hover:text-purple-600 text-sm flex-shrink-0">📋 Copy</span>
+                    <CopyButton text={deployedAgent.cardUrl} iconSize={20} className="flex-shrink-0" />
                   </div>
-                </button>
+                </div>
               </div>
             </div>
 
