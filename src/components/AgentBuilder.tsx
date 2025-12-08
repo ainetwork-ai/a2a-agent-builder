@@ -449,7 +449,7 @@ export default function AgentBuilder() {
                     <button
                       onClick={() => deployAgent(agent)}
                       disabled={agent.deployed || deployingAgentId === agent.id}
-                      className={`flex-1 min-w-[100px] px-2 sm:px-3 py-2 sm:py-2.5 rounded-lg font-semibold shadow-md transition-all duration-200 text-xs sm:text-sm ${
+                      className={`flex-1 min-w-[100px] px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg font-semibold shadow-md transition-all duration-200 text-xs sm:text-sm ${
                         agent.deployed || deployingAgentId === agent.id
                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                           : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600 hover:shadow-lg transform hover:-translate-y-0.5'
@@ -467,21 +467,21 @@ export default function AgentBuilder() {
                     </button>
                     <button
                       onClick={() => exportAgent(agent)}
-                      className="flex-1 min-w-[100px] px-2 sm:px-3 py-2 sm:py-2.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg font-semibold shadow-md transition-[box-shadow,transform] duration-200 active:scale-95 text-xs sm:text-sm md:hover:from-blue-600 md:hover:to-indigo-600 md:hover:shadow-lg md:hover:-translate-y-0.5"
+                      className="flex-1 min-w-[100px] px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg font-semibold shadow-md transition-[box-shadow,transform] duration-200 active:scale-95 text-xs sm:text-sm md:hover:from-blue-600 md:hover:to-indigo-600 md:hover:shadow-lg md:hover:-translate-y-0.5"
                     >
                       💾 Export
                     </button>
                     {agent.deployed ? (
                       <a
                         href={`/chat?agentUrl=${encodeURIComponent(agent.url)}`}
-                        className="flex-1 min-w-[100px] px-2 sm:px-3 py-2 sm:py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold shadow-md transition-[box-shadow,transform] duration-200 active:scale-95 text-xs sm:text-sm flex items-center justify-center md:hover:from-purple-600 md:hover:to-pink-600 md:hover:shadow-lg md:hover:-translate-y-0.5"
+                        className="flex-1 min-w-[100px] px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold shadow-md transition-[box-shadow,transform] duration-200 active:scale-95 text-xs sm:text-sm flex items-center justify-center md:hover:from-purple-600 md:hover:to-pink-600 md:hover:shadow-lg md:hover:-translate-y-0.5"
                       >
                         💬 Chat
                       </a>
                     ) : (
                       <button
                         disabled
-                        className="flex-1 min-w-[100px] px-2 sm:px-3 py-2 sm:py-2.5 bg-gray-300 text-gray-500 rounded-lg font-semibold cursor-not-allowed text-xs sm:text-sm flex items-center justify-center"
+                        className="flex-1 min-w-[100px] px-3 sm:px-4 py-2.5 sm:py-3 bg-gray-300 text-gray-500 rounded-lg font-semibold cursor-not-allowed text-xs sm:text-sm flex items-center justify-center"
                         title="Deploy the agent first to test chat"
                       >
                         💬 Chat
