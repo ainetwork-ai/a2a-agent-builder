@@ -47,8 +47,8 @@ export async function POST(
       return NextResponse.json({ error: "Agent not found" }, { status: 404 });
     }
 
-    if (agent.modelProvider !== 'gemini') {
-      return NextResponse.json({ error: "Only Gemini models are supported" }, { status: 400 });
+    if (agent.modelProvider !== 'google') {
+      return NextResponse.json({ error: "Only Google models are supported" }, { status: 400 });
     }
 
     console.log('🧠 updateMemory called for', agentId, 'contextId:', contextId);

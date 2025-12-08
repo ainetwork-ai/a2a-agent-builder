@@ -6,6 +6,7 @@ import EditAgentModal from './EditAgentModal';
 import { WalletButton } from './WalletButton';
 import { useAccount } from 'wagmi';
 import { Intent } from '@/types/agent';
+import { getDisplayModelName } from '@/lib/utils/modelUtils';
 
 interface DeployedAgent {
   id: string;
@@ -192,7 +193,7 @@ export default function DeployedAgents() {
                   <div className="flex items-center gap-2 text-xs text-gray-600">
                     <span className="font-semibold">🧠 Model:</span>
                     <span>
-                      {agent.modelProvider} / {agent.modelName}
+                      {agent.modelProvider} / {getDisplayModelName(agent.modelName)}
                     </span>
                   </div>
                 </div>

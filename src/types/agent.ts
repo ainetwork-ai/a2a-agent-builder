@@ -26,7 +26,7 @@ export interface Intent {
 export interface AgentConfig extends AgentCard {
   id: string;
   prompt: string;
-  modelProvider: 'gemini' | 'openai' | 'anthropic';
+  modelProvider: 'google' | 'openai' | 'anthropic';
   modelName: string;
   createdAt: Date;
   updatedAt: Date;
@@ -39,7 +39,7 @@ export interface AgentBuilderForm {
   description: string;
   prompt: string;
   skills: Skill[];
-  modelProvider: 'gemini' | 'openai' | 'anthropic';
+  modelProvider: 'google' | 'openai' | 'anthropic';
   modelName: string;
   intents?: Intent[];
 }
