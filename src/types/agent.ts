@@ -17,14 +17,21 @@ export interface Skill {
   tags: string[];
 }
 
+export interface Intent {
+  name: string;
+  description: string;
+  prompt: string;
+}
+
 export interface AgentConfig extends AgentCard {
   id: string;
   prompt: string;
-  modelProvider: 'gemini' | 'openai' | 'anthropic';
+  modelProvider: 'google' | 'openai' | 'anthropic';
   modelName: string;
   createdAt: Date;
   updatedAt: Date;
   deployed?: boolean;
+  intents?: Intent[];
 }
 
 export interface AgentBuilderForm {
@@ -32,7 +39,7 @@ export interface AgentBuilderForm {
   description: string;
   prompt: string;
   skills: Skill[];
-  tags: string[];
-  modelProvider: 'gemini' | 'openai' | 'anthropic';
+  modelProvider: 'google' | 'openai' | 'anthropic';
   modelName: string;
+  intents?: Intent[];
 }

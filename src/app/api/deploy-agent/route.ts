@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AgentConfig } from '@/types/agent';
 import { setAgent } from '@/lib/agentStore';
+import { setIntents } from '@/lib/intentStore';
 import type { AgentCard } from "@a2a-js/sdk";
+
 export async function POST(request: NextRequest) {
   try {
-    const agentConfig: AgentConfig = await request.json();
+    const body = await request.json();
+    const agentConfig: AgentConfig = body.agentConfig || body;
+    const creatorAddress: string | undefined = body.creatorAddress;
     const agentId = agentConfig.id;
 
-    console.log('🚀 Deploying agent:', agentId);
+    console.log('🚀 Deploying agent:', agentId, 'Creator:', creatorAddress);
 
     const agentCard: AgentCard = {
       name: agentConfig.name,
@@ -21,6 +25,13 @@ export async function POST(request: NextRequest) {
       skills: agentConfig.skills,
     };
 
+    // Store intents in separate redis key if provided
+    if (agentConfig.intents && agentConfig.intents.length > 0) {
+      console.log(`📌 Storing ${agentConfig.intents.length} intents for agent ${agentId}...`);
+      await setIntents(agentId, agentConfig.intents);
+      console.log('✅ Intents stored successfully');
+    }
+
     // Store agent configuration in Redis
     // The executor will be created on-demand when the agent receives a message
     await setAgent(agentId, {
@@ -28,6 +39,7 @@ export async function POST(request: NextRequest) {
       prompt: agentConfig.prompt,
       modelProvider: agentConfig.modelProvider,
       modelName: agentConfig.modelName,
+      creator: creatorAddress,
     });
 
     console.log('✅ Agent deployed successfully:', agentId);

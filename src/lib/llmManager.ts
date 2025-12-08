@@ -1,26 +1,33 @@
-import { OpenAI } from "openai";
+import { OpenAI, AzureOpenAI } from 'openai';
 
 interface LLMConfig {
-  apiUrl: string;
+  apiUrl?: string;
   modelName: string;
+  useAzure: boolean;
 }
 
 class LLMManager {
   private static instance: LLMManager;
-  private client: OpenAI | null = null;
+  private client: OpenAI | AzureOpenAI | null = null;
   private config: LLMConfig;
 
   private constructor() {
-    const apiUrl = process.env.LLM_API_URL || "";
-    const modelName = process.env.LLM_MODEL || "";
+    const apiUrl = process.env.LLM_API_URL;
+    const modelName = process.env.LLM_MODEL;
 
-    if (!apiUrl || !modelName) {
-      console.warn("LLM API credentials not configured. LLM will not be available.");
+    // If LLM_API_URL and LLM_MODEL are not set, use Azure OpenAI
+    const useAzure = !apiUrl || !modelName;
+
+    if (useAzure) {
+      console.log('Using Azure OpenAI');
+    } else {
+      console.log('Using custom LLM API');
     }
 
     this.config = {
       apiUrl,
-      modelName
+      modelName: modelName || 'gpt-4o',
+      useAzure,
     };
 
     // Disable TLS verification if specified (for self-signed certificates)
@@ -36,56 +43,109 @@ class LLMManager {
     return LLMManager.instance;
   }
 
-  private getClient(): OpenAI {
+  private getClient(): OpenAI | AzureOpenAI {
     if (!this.client) {
-      const { apiUrl, modelName } = this.config;
+      const { apiUrl, useAzure } = this.config;
 
-      if (!apiUrl || !modelName) {
-        throw new Error("LLM API credentials are not configured. Please set LLM_API_URL and LLM_MODEL environment variables.");
+      if (useAzure) {
+        // Use Azure OpenAI
+        const azureEndpoint = process.env.AZURE_OPENAI_ENDPOINT;
+        const azureApiKey = process.env.AZURE_OPENAI_KEY;
+
+        if (!azureEndpoint || !azureApiKey) {
+          throw new Error(
+            'Azure OpenAI credentials are not configured. Please set AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_KEY environment variables.'
+          );
+        }
+
+        this.client = new AzureOpenAI({
+          endpoint: azureEndpoint,
+          apiKey: azureApiKey,
+          apiVersion: process.env.LLM_API_VERSION || '2024-10-21',
+        });
+      } else {
+        // Use custom LLM API
+        if (!apiUrl) {
+          throw new Error(
+            'LLM API credentials are not configured. Please set LLM_API_URL and LLM_MODEL environment variables.'
+          );
+        }
+
+        // Extract base URL (remove /chat/completions if present)
+        const baseURL = apiUrl.replace(/\/chat\/completions$/, '');
+
+        // Use LLM_API_KEY from environment if available, otherwise use dummy key
+        const apiKey = process.env.LLM_API_KEY || 'dummy-key';
+
+        this.client = new OpenAI({
+          baseURL,
+          apiKey,
+        });
       }
-
-      // Extract base URL (remove /chat/completions if present)
-      const baseURL = apiUrl.replace(/\/chat\/completions$/, '');
-
-      this.client = new OpenAI({
-        baseURL,
-        apiKey: 'dummy-key', // Some servers don't require a real API key
-      });
     }
     return this.client;
   }
 
   public async generateChatResponse(
-    messages: Array<{ role: "system" | "user" | "assistant"; content: string }>,
+    messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
     maxTokens: number = 16384
   ): Promise<string> {
     try {
       const client = this.getClient();
 
+      // Azure OpenAI uses max_completion_tokens, others use max_tokens
+      const tokenParam = this.config.useAzure
+        ? { max_completion_tokens: maxTokens }
+        : { max_tokens: maxTokens };
+
       const response = await client.chat.completions.create({
         messages,
-        max_tokens: maxTokens,
-        model: this.config.modelName
+        ...tokenParam,
+        model: this.config.modelName,
       });
 
       const content = response.choices[0]?.message?.content;
       if (!content) {
-        throw new Error("No content in LLM response");
+        throw new Error('No content in LLM response');
       }
 
       return content;
     } catch (error) {
-      console.error("Error calling LLM:", error);
+      console.error('Error calling LLM:', error);
       throw error;
     }
   }
 
   public isConfigured(): boolean {
+    if (this.config.useAzure) {
+      return !!(process.env.AZURE_OPENAI_ENDPOINT && process.env.AZURE_OPENAI_KEY);
+    }
     return !!(this.config.apiUrl && this.config.modelName);
   }
 
   public getModelName(): string {
     return this.config.modelName;
+  }
+
+  public getDisplayModelName(): string {
+    const modelName = this.config.modelName;
+    const lastSlash = modelName.lastIndexOf('/');
+    return lastSlash >= 0 ? modelName.substring(lastSlash + 1) : modelName;
+  }
+
+  public getModelProvider(): 'google' | 'openai' | 'anthropic' {
+    const modelName = this.config.modelName.toLowerCase();
+
+    if (modelName.includes('gemini') || modelName.includes('gemma')) {
+      return 'google';
+    } else if (modelName.includes('gpt') || modelName.includes('o1') || modelName.includes('openai')) {
+      return 'openai';
+    } else if (modelName.includes('claude') || modelName.includes('anthropic')) {
+      return 'anthropic';
+    }
+
+    console.warn(`Could not detect provider from model name: ${this.config.modelName}, defaulting to openai`);
+    return 'openai';
   }
 }
 
@@ -94,7 +154,7 @@ export const llmManager = LLMManager.getInstance();
 
 // Export convenience function
 export async function callLLM(
-  messages: Array<{ role: "system" | "user" | "assistant"; content: string }>,
+  messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
   maxTokens?: number
 ): Promise<string> {
   return llmManager.generateChatResponse(messages, maxTokens);

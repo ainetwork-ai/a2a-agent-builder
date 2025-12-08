@@ -16,6 +16,9 @@ import { classifyIntent, getThinkingMemory, getUserCaring, getLastIntent } from 
 import { getBaseUrl } from '@/lib/url';
 import { autoEvolveAfterConversation } from '@/lib/thinkingEvolution';
 import { callLLM } from '@/lib/llmManager';
+import { getIntents } from '@/lib/intentStore';
+import { buildPromptWithIntents } from '@/lib/promptBuilder';
+import type { Skill } from '@/types/agent';
 
 const AGENT_CARD_PATH = ".well-known/agent.json";
 
@@ -42,7 +45,7 @@ class DynamicAgentExecutor implements AgentExecutor {
     return `${this.agentId}-${contextId}`;
   }
 
-  private buildSystemPrompt(intent: string, thinking: string, caring: string): string {
+  private buildSystemPrompt(intent: string, thinking: string, caring: string, a2a?: string): string {
     let memoryContext = '';
     if (thinking && thinking !== '(empty)') {
       memoryContext = `\n\nContext for "${intent}":\n- What I know: ${thinking}\n- About you: ${caring}`;
@@ -57,7 +60,11 @@ RESPONSE STYLE:
 - Only give detailed explanations when specifically asked
 
 INTERNAL GUIDANCE (do not mention to user):${memoryContext}
-Use this knowledge naturally when relevant, but keep responses concise.`;
+Use this knowledge naturally when relevant, but keep responses concise.
+
+A2A GUIDANCE (If you need to collaborate with other agents, use the following information to help you):
+${a2a}
+`;
 
     return basePrompt;
   }
@@ -69,11 +76,25 @@ Use this knowledge naturally when relevant, but keep responses concise.`;
     const contextId = requestContext.contextId;
     const key = this.getContextKey(contextId);
     const incomingMessage = requestContext.userMessage;
+    console.log(`@@@@@@@@@@@@@ ${contextId} ${incomingMessage.metadata?.agentSkills}`);
 
     // Classify intent and get relevant memory
     let intent = 'general';
     let thinking = '';
     let caring = '';
+    let a2aPrompt = '';
+
+    if (incomingMessage.metadata?.agentSkills) {
+      const { agentSkills } = incomingMessage.metadata as { agentSkills: { name: string, skills: Skill[]}[] };
+      a2aPrompt = `
+        If you need to collaborate with other agents, use the following information to help you:
+        If the other agents can help you, you can mention the agent name and make a request to the other agent.
+        like this: "@{agent_name} - {request_to_help_agent_sentence}"
+
+        Agent Skill list:
+      `;
+      a2aPrompt += agentSkills.map(agent => `${agent.name}: [${agent.skills.map(skill => `"${skill.name}: ${skill.description}"`).join(', ')}]`).join('\n');
+    }
 
     if (incomingMessage) {
       try {
@@ -123,7 +144,8 @@ Use this knowledge naturally when relevant, but keep responses concise.`;
     // Initialize history with system prompt if needed
     if (!DynamicAgentExecutor.historyStore[key]) {
       DynamicAgentExecutor.historyStore[key] = [];
-      const systemPrompt = this.buildSystemPrompt(intent, thinking, caring);
+      console.log("no history store");
+      const systemPrompt = this.buildSystemPrompt(intent, thinking, caring, a2aPrompt);
       const initialMessage: Message = {
         kind: "message",
         messageId: uuidv4(),
@@ -238,27 +260,27 @@ Use this knowledge naturally when relevant, but keep responses concise.`;
 }
 
 // Helper function to ensure agent has runtime handlers
-function ensureAgentHandlers(agent: StoredAgent, agentId: string): StoredAgent {
+async function ensureAgentHandlers(agent: StoredAgent, agentId: string): Promise<StoredAgent> {
   // If handlers already exist, return as is
   if (agent.executor && agent.requestHandler && agent.transportHandler) {
     return agent;
   }
 
+  // Load intents from redis and append them to the base prompt at runtime
+  const intents = await getIntents(agentId);
+  const fullPrompt = buildPromptWithIntents(agent.prompt, intents);
+
   // Recreate handlers from stored data
   const executor = new DynamicAgentExecutor(
     agentId,
-    agent.prompt,
+    fullPrompt,
     agent.modelProvider,
     agent.modelName,
     agent.thinking,
     agent.caring
   );
 
-  const requestHandler = new DefaultRequestHandler(
-    agent.card,
-    new InMemoryTaskStore(),
-    executor
-  );
+  const requestHandler = new DefaultRequestHandler(agent.card, new InMemoryTaskStore(), executor);
 
   const transportHandler = new JsonRpcTransportHandler(requestHandler);
 
@@ -266,7 +288,7 @@ function ensureAgentHandlers(agent: StoredAgent, agentId: string): StoredAgent {
     ...agent,
     executor,
     requestHandler,
-    transportHandler
+    transportHandler,
   };
 }
 
@@ -457,7 +479,7 @@ export async function POST(
     }
 
     // Ensure agent has runtime handlers (recreate if needed)
-    agent = ensureAgentHandlers(agent, agentId);
+    agent = await ensureAgentHandlers(agent, agentId);
 
     try {
       const body = await request.json();
@@ -539,9 +561,22 @@ export async function DELETE(
   }
 
   try {
-    const exists = await hasAgent(agentId);
-    if (!exists) {
+    const agent = await getAgent(agentId);
+    if (!agent) {
       return NextResponse.json({ error: "Agent not found" }, { status: 404 });
+    }
+
+    // Get creator address from request body or query params
+    const body = await request.json().catch(() => ({}));
+    const requestAddress = body.address || request.nextUrl.searchParams.get('address');
+
+    // Verify creator ownership (skip check for agents without creator - legacy agents)
+    if (agent.creator && agent.creator !== requestAddress) {
+      console.log('❌ Unauthorized delete attempt:', { creator: agent.creator, requester: requestAddress });
+      return NextResponse.json(
+        { error: "Unauthorized: Only the creator can delete this agent" },
+        { status: 403 }
+      );
     }
 
     await deleteAgent(agentId);
