@@ -30,8 +30,8 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
     url: agent.url,
     skills: agent.skills,
     intents: agent.intents,
-    modelProvider: 'gemini' as const,
-    modelName: 'gemini-2.5-flash',
+    modelProvider: agent.modelProvider as 'google' | 'openai' | 'anthropic',
+    modelName: agent.modelName,
     prompt: agent.prompt,
   });
 
@@ -45,8 +45,8 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
         url: agent.url,
         skills: agent.skills,
         intents: agent.intents,
-        modelProvider: 'gemini',
-        modelName: 'gemini-2.5-flash',
+        modelProvider: agent.modelProvider as 'google' | 'openai' | 'anthropic',
+        modelName: agent.modelName,
         prompt: agent.prompt,
       });
     }

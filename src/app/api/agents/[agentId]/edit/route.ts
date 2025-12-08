@@ -59,7 +59,7 @@ export async function PUT(
     const updatedAgent = {
       ...agent,
       card: updatedCard,
-      modelProvider: modelProvider as 'gemini' | 'openai' | 'anthropic',
+      modelProvider: modelProvider as 'google' | 'openai' | 'anthropic',
       modelName,
       prompt,
     };

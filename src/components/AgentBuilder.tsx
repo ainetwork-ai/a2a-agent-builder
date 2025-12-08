@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AgentBuilderForm, AgentConfig } from '@/types/agent';
 import Link from 'next/link';
 import { WalletButton } from './WalletButton';
@@ -8,15 +8,58 @@ import { useAccount } from 'wagmi';
 import { transliterate } from 'transliteration';
 import slugify from 'slugify';
 import { AgentForm } from './AgentForm';
+import { getDisplayModelName } from '@/lib/utils/modelUtils';
+import { CopyButton } from './CopyButton';
+
+type BuilderMode = 'ai' | 'manual';
 
 export default function AgentBuilder() {
   const { address, isConnected } = useAccount();
   const [agents, setAgents] = useState<AgentConfig[]>([]);
+  const [mode, setMode] = useState<BuilderMode>('ai');
   const [prompt, setPrompt] = useState('');
+  const [modelConfig, setModelConfig] = useState<{
+    modelProvider: 'google' | 'openai' | 'anthropic';
+    modelName: string;
+    displayModelName: string;
+  }>({
+    modelProvider: 'google',
+    modelName: 'gemma-3-27b-it',
+    displayModelName: 'gemma-3-27b-it',
+  });
+  const [manualFormData, setManualFormData] = useState<AgentBuilderForm>({
+    name: '',
+    description: '',
+    prompt: '',
+    skills: [],
+    modelProvider: 'google',
+    modelName: 'gemma-3-27b-it',
+    intents: [],
+  });
   const [generatedForm, setGeneratedForm] = useState<AgentBuilderForm | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [deployedAgent, setDeployedAgent] = useState<{ url: string; cardUrl: string } | null>(null);
   const [deployingAgentId, setDeployingAgentId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchModelConfig = async () => {
+      try {
+        const response = await fetch('/api/model-config');
+        if (response.ok) {
+          const config = await response.json();
+          setModelConfig(config);
+          setManualFormData(prev => ({
+            ...prev,
+            modelProvider: config.modelProvider,
+            modelName: config.modelName,
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching model config:', error);
+      }
+    };
+    fetchModelConfig();
+  }, []);
 
   const generateAgentFromPrompt = async () => {
     if (!prompt.trim()) {
@@ -48,8 +91,33 @@ export default function AgentBuilder() {
     }
   };
 
+  const autoCompleteManualForm = async (currentFormData: AgentBuilderForm) => {
+    setIsGenerating(true);
+    try {
+      const response = await fetch('/api/generate-agent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ partialData: currentFormData }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to auto-complete agent');
+      }
+
+      const data = await response.json();
+      setManualFormData(data);
+    } catch (error) {
+      console.error('Error auto-completing agent:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Failed to auto-complete agent: ${errorMessage}\n\nPlease check the server console for detailed logs.`);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const createAgent = async (data?: AgentBuilderForm) => {
-    const agentData = data || generatedForm;
+    const agentData = data || (mode === 'ai' ? generatedForm : manualFormData);
     if (!agentData) return;
 
     setDeployingAgentId('generating');
@@ -91,10 +159,22 @@ export default function AgentBuilder() {
     };
 
     setAgents(prev => [...prev, newAgent]);
-    
-    // Reset form
-    setPrompt('');
-    setGeneratedForm(null);
+
+    // Reset form based on mode
+    if (mode === 'ai') {
+      setPrompt('');
+      setGeneratedForm(null);
+    } else {
+      setManualFormData({
+        name: '',
+        description: '',
+        prompt: '',
+        skills: [],
+        modelProvider: modelConfig.modelProvider,
+        modelName: modelConfig.modelName,
+        intents: [],
+      });
+    }
   };
 
   const exportAgent = (agent: AgentConfig) => {
@@ -207,58 +287,102 @@ export default function AgentBuilder() {
               </div>
               <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Create New Agent</h2>
             </div>
-          
-          <div>
-            <label className="block text-sm font-semibold mb-3 text-gray-700">
-              Agent Description
-              <span className="text-gray-400 font-normal ml-2">(What kind of agent would you like to create?)</span>
-            </label>
-            <textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              className="w-full p-3 sm:p-4 border-2 border-gray-200 rounded-xl h-32 sm:h-40 focus:border-purple-400 focus:ring-4 focus:ring-purple-100 focus:outline-none transition-all duration-200 resize-none text-base text-gray-900 placeholder:text-gray-400"
-              placeholder="Example: Create an AI tutor that teaches Web3 using the Socratic method"
-            />
-          </div>
 
-          <button
-            onClick={generateAgentFromPrompt}
-            disabled={isGenerating || !prompt.trim()}
-            className="w-full py-3 sm:py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 font-bold text-base sm:text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
-          >
-            {isGenerating ? (
-              <span className="flex items-center justify-center gap-2">
-                <span className="animate-spin">⚡</span> Generating...
-              </span>
-            ) : (
-              <span className="flex items-center justify-center gap-2">
-                🤖 Generate Agent with AI
-              </span>
+            {/* Mode Tabs */}
+            <div className="flex gap-2 p-1 bg-gray-100 rounded-xl">
+              <button
+                onClick={() => setMode('ai')}
+                className={`flex-1 py-2 px-3 rounded-lg font-medium text-sm transition-all duration-200 ${
+                  mode === 'ai'
+                    ? 'bg-white text-purple-600 shadow-md'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                🤖 AI Mode
+              </button>
+              <button
+                onClick={() => setMode('manual')}
+                className={`flex-1 py-2 px-3 rounded-lg font-medium text-sm transition-all duration-200 ${
+                  mode === 'manual'
+                    ? 'bg-white text-purple-600 shadow-md'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                ✍️ Manual Mode
+              </button>
+            </div>
+
+            {/* AI Mode */}
+            {mode === 'ai' && (
+              <>
+                <div>
+                  <label className="block text-sm font-semibold mb-3 text-gray-700">
+                    Agent Description
+                    <span className="text-gray-400 font-normal ml-2">(What kind of agent would you like to create?)</span>
+                  </label>
+                  <textarea
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    className="w-full p-3 sm:p-4 border-2 border-gray-200 rounded-xl h-32 sm:h-40 focus:border-purple-400 focus:ring-4 focus:ring-purple-100 focus:outline-none transition-all duration-200 resize-none text-base text-gray-900 placeholder:text-gray-400"
+                    placeholder="Example: Create an AI tutor that teaches Web3 using the Socratic method"
+                  />
+                </div>
+
+                <button
+                  onClick={generateAgentFromPrompt}
+                  disabled={isGenerating || !prompt.trim()}
+                  className="w-full py-3 sm:py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 font-bold text-base sm:text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
+                >
+                  {isGenerating ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="animate-spin">⚡</span> Generating...
+                    </span>
+                  ) : (
+                    <span className="flex items-center justify-center gap-2">
+                      🤖 Generate Agent with AI
+                    </span>
+                  )}
+                </button>
+
+                {/* Generated Agent Form */}
+                {generatedForm && (
+                  <div className="mt-6 animate-fade-in">
+                    <div className="mb-4 px-2">
+                      <h3 className="font-bold text-base sm:text-lg text-purple-900 flex items-center gap-2">
+                        ✨ Generated Agent
+                      </h3>
+                      <p className="text-sm text-gray-600 mt-1">Review and customize your agent before creating</p>
+                    </div>
+
+                    {/* Full width form - No preview mode */}
+                    <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-6 border border-purple-200">
+                      <AgentForm
+                        initialData={generatedForm}
+                        onSubmit={(data) => createAgent(data)}
+                        onCancel={() => setGeneratedForm(null)}
+                        isSubmitting={!!deployingAgentId}
+                        submitLabel="Create"
+                      />
+                    </div>
+                  </div>
+                )}
+              </>
             )}
-          </button>
 
-          {/* Generated Agent Form */}
-          {generatedForm && (
-            <div className="mt-6 animate-fade-in">
-              <div className="mb-4 px-2">
-                <h3 className="font-bold text-base sm:text-lg text-purple-900 flex items-center gap-2">
-                  ✨ Generated Agent
-                </h3>
-                <p className="text-sm text-gray-600 mt-1">Review and customize your agent before creating</p>
-              </div>
-
-              {/* Full width form - No preview mode */}
+            {/* Manual Mode */}
+            {mode === 'manual' && (
               <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-6 border border-purple-200">
                 <AgentForm
-                  initialData={generatedForm}
+                  initialData={manualFormData}
                   onSubmit={(data) => createAgent(data)}
-                  onCancel={() => setGeneratedForm(null)}
+                  onAutoComplete={autoCompleteManualForm}
                   isSubmitting={!!deployingAgentId}
+                  isAutoCompleting={isGenerating}
                   submitLabel="Create"
+                  showAutoComplete={true}
                 />
               </div>
-            </div>
-          )}
+            )}
           </div>
         </div>
 
@@ -296,7 +420,7 @@ export default function AgentBuilder() {
                   <div className="space-y-2.5 mt-4 bg-gray-50 p-3 sm:p-4 rounded-xl">
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-gray-700 text-xs sm:text-sm whitespace-nowrap">🧠 Model:</span>
-                      <span className="text-gray-600 text-xs sm:text-sm truncate">{agent.modelProvider} / {agent.modelName}</span>
+                      <span className="text-gray-600 text-xs sm:text-sm truncate">{agent.modelProvider} / {getDisplayModelName(agent.modelName)}</span>
                     </div>
                     <div className="flex items-start gap-2">
                       <span className="font-semibold text-gray-700 text-xs sm:text-sm whitespace-nowrap">⚡ Skills:</span>
@@ -398,34 +522,22 @@ export default function AgentBuilder() {
             <div className="space-y-3">
               <div>
                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-2">Base URL</label>
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(deployedAgent.url);
-                    alert('Base URL copied to clipboard!');
-                  }}
-                  className="w-full bg-gray-50 hover:bg-gray-100 border-2 border-gray-200 hover:border-purple-300 rounded-lg p-3 text-left transition-all group"
-                >
+                <div className="w-full bg-gray-50 border-2 border-gray-200 rounded-lg p-3">
                   <div className="flex items-center justify-between gap-2">
                     <code className="text-xs sm:text-sm text-gray-700 break-all flex-1">{deployedAgent.url}</code>
-                    <span className="text-gray-400 group-hover:text-purple-600 text-sm flex-shrink-0">📋 Copy</span>
+                    <CopyButton text={deployedAgent.url} iconSize={20} className="flex-shrink-0" />
                   </div>
-                </button>
+                </div>
               </div>
 
               <div>
                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-2">Agent Card URL</label>
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(deployedAgent.cardUrl);
-                    alert('Agent Card URL copied to clipboard!');
-                  }}
-                  className="w-full bg-gray-50 hover:bg-gray-100 border-2 border-gray-200 hover:border-purple-300 rounded-lg p-3 text-left transition-all group"
-                >
+                <div className="w-full bg-gray-50 border-2 border-gray-200 rounded-lg p-3">
                   <div className="flex items-center justify-between gap-2">
                     <code className="text-xs sm:text-sm text-gray-700 break-all flex-1">{deployedAgent.cardUrl}</code>
-                    <span className="text-gray-400 group-hover:text-purple-600 text-sm flex-shrink-0">📋 Copy</span>
+                    <CopyButton text={deployedAgent.cardUrl} iconSize={20} className="flex-shrink-0" />
                   </div>
-                </button>
+                </div>
               </div>
             </div>
 

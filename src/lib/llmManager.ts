@@ -126,6 +126,27 @@ class LLMManager {
   public getModelName(): string {
     return this.config.modelName;
   }
+
+  public getDisplayModelName(): string {
+    const modelName = this.config.modelName;
+    const lastSlash = modelName.lastIndexOf('/');
+    return lastSlash >= 0 ? modelName.substring(lastSlash + 1) : modelName;
+  }
+
+  public getModelProvider(): 'google' | 'openai' | 'anthropic' {
+    const modelName = this.config.modelName.toLowerCase();
+
+    if (modelName.includes('gemini') || modelName.includes('gemma')) {
+      return 'google';
+    } else if (modelName.includes('gpt') || modelName.includes('o1') || modelName.includes('openai')) {
+      return 'openai';
+    } else if (modelName.includes('claude') || modelName.includes('anthropic')) {
+      return 'anthropic';
+    }
+
+    console.warn(`Could not detect provider from model name: ${this.config.modelName}, defaulting to openai`);
+    return 'openai';
+  }
 }
 
 // Export singleton instance
