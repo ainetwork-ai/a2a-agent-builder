@@ -155,7 +155,7 @@ export default function DeployedAgents() {
             {agents.map((agent) => (
               <div
                 key={agent.id}
-                className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-xl border border-blue-100 hover:shadow-2xl hover:border-blue-300 transition-all duration-300 hover:-translate-y-1"
+                className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-xl border border-blue-100 transition-[box-shadow,border-color,transform] duration-300 md:hover:shadow-2xl md:hover:border-blue-300 md:hover:-translate-y-1"
               >
                 {/* Header */}
                 <div className="flex items-start justify-between mb-4">
@@ -204,7 +204,7 @@ export default function DeployedAgents() {
                 <div className="space-y-2">
                   <Link
                     href={`/chat?agentUrl=${encodeURIComponent(agent.url)}`}
-                    className="block w-full py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 font-semibold shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 text-center"
+                    className="block w-full py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold shadow-md transition-[box-shadow,transform] duration-200 active:scale-95 text-center md:hover:from-purple-600 md:hover:to-pink-600 md:hover:shadow-lg md:hover:-translate-y-0.5"
                   >
                     💬 Start Chat
                   </Link>

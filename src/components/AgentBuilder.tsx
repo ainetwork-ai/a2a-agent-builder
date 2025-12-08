@@ -333,7 +333,7 @@ export default function AgentBuilder() {
                 <button
                   onClick={generateAgentFromPrompt}
                   disabled={isGenerating || !prompt.trim()}
-                  className="w-full py-3 sm:py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 font-bold text-base sm:text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
+                  className="w-full py-3 sm:py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-bold text-base sm:text-lg shadow-lg transition-[box-shadow,transform] duration-200 active:scale-95 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:active:scale-100 disabled:shadow-none md:hover:from-purple-700 md:hover:to-blue-700 md:hover:shadow-xl md:hover:-translate-y-0.5"
                 >
                   {isGenerating ? (
                     <span className="flex items-center justify-center gap-2">
@@ -464,14 +464,14 @@ export default function AgentBuilder() {
                     </button>
                     <button
                       onClick={() => exportAgent(agent)}
-                      className="flex-1 min-w-[100px] px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg hover:from-blue-600 hover:to-indigo-600 font-semibold shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 text-sm sm:text-base"
+                      className="flex-1 min-w-[100px] px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg font-semibold shadow-md transition-[box-shadow,transform] duration-200 active:scale-95 text-sm sm:text-base md:hover:from-blue-600 md:hover:to-indigo-600 md:hover:shadow-lg md:hover:-translate-y-0.5"
                     >
                       💾 Export
                     </button>
                     {agent.deployed ? (
                       <a
                         href={`/chat?agentUrl=${encodeURIComponent(agent.url)}`}
-                        className="flex-1 min-w-[100px] px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 font-semibold shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 text-center text-sm sm:text-base"
+                        className="flex-1 min-w-[100px] px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold shadow-md transition-[box-shadow,transform] duration-200 active:scale-95 text-center text-sm sm:text-base md:hover:from-purple-600 md:hover:to-pink-600 md:hover:shadow-lg md:hover:-translate-y-0.5"
                       >
                         💬 Chat
                       </a>
