@@ -10,11 +10,13 @@ import slugify from 'slugify';
 import { AgentForm } from './AgentForm';
 import { getDisplayModelName } from '@/lib/utils/modelUtils';
 import { CopyButton } from './CopyButton';
+import { useToast } from '@/contexts/ToastContext';
 
 type BuilderMode = 'ai' | 'manual';
 
 export default function AgentBuilder() {
   const { address, isConnected } = useAccount();
+  const toast = useToast();
   const [agents, setAgents] = useState<AgentConfig[]>([]);
   const [mode, setMode] = useState<BuilderMode>('ai');
   const [prompt, setPrompt] = useState('');
@@ -63,7 +65,7 @@ export default function AgentBuilder() {
 
   const generateAgentFromPrompt = async () => {
     if (!prompt.trim()) {
-      alert('Please enter a prompt');
+      toast.warning('Please enter a prompt');
       return;
     }
 
@@ -85,7 +87,7 @@ export default function AgentBuilder() {
     } catch (error) {
       console.error('Error generating agent:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      alert(`Failed to generate agent: ${errorMessage}\n\nPlease check the server console for detailed logs.`);
+      toast.error(`Failed to generate agent: ${errorMessage}\n\nPlease check the server console for detailed logs.`);
     } finally {
       setIsGenerating(false);
     }
@@ -110,7 +112,7 @@ export default function AgentBuilder() {
     } catch (error) {
       console.error('Error auto-completing agent:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      alert(`Failed to auto-complete agent: ${errorMessage}\n\nPlease check the server console for detailed logs.`);
+      toast.error(`Failed to auto-complete agent: ${errorMessage}\n\nPlease check the server console for detailed logs.`);
     } finally {
       setIsGenerating(false);
     }
@@ -211,7 +213,7 @@ export default function AgentBuilder() {
   const deployAgent = async (agent: AgentConfig) => {
     // Check wallet connection
     if (!isConnected || !address) {
-      alert('⚠️ Please connect your wallet to deploy an agent.');
+      toast.warning('Please connect your wallet to deploy an agent.');
       return;
     }
 
@@ -241,7 +243,7 @@ export default function AgentBuilder() {
     } catch (error) {
       console.error('Error deploying agent:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      alert(`❌ Failed to deploy agent: ${errorMessage}\n\nPlease check the server console for detailed logs.`);
+      toast.error(`Failed to deploy agent: ${errorMessage}\n\nPlease check the server console for detailed logs.`);
     } finally {
       setDeployingAgentId(null);
     }

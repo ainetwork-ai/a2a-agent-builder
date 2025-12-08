@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Skill, AgentBuilderForm, Intent } from '@/types/agent';
 import { useAccount } from 'wagmi';
 import { AgentForm } from './AgentForm';
+import { useToast } from '@/contexts/ToastContext';
 
 interface EditAgentModalProps {
   isOpen: boolean;
@@ -24,6 +25,7 @@ interface EditAgentModalProps {
 
 export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: EditAgentModalProps) {
   const { address } = useAccount();
+  const toast = useToast();
   const [formData, setFormData] = useState({
     name: agent.name,
     description: agent.description,
@@ -69,12 +71,12 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
         throw new Error(errorData.error || 'Failed to update agent');
       }
 
-      alert('✅ Agent updated successfully!');
+      toast.success('Agent updated successfully!');
       onSuccess();
       onClose();
     } catch (error) {
       console.error('Error updating agent:', error);
-      alert('❌ Failed to update agent. Please try again.');
+      toast.error('Failed to update agent. Please try again.');
     } finally {
       setIsSaving(false);
     }

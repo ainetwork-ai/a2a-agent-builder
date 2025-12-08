@@ -7,6 +7,7 @@ import { WalletButton } from './WalletButton';
 import { useAccount } from 'wagmi';
 import { Intent } from '@/types/agent';
 import { getDisplayModelName } from '@/lib/utils/modelUtils';
+import { useToast } from '@/contexts/ToastContext';
 
 interface DeployedAgent {
   id: string;
@@ -29,6 +30,7 @@ interface DeployedAgent {
 
 export default function DeployedAgents() {
   const { address, isConnected } = useAccount();
+  const toast = useToast();
   const [agents, setAgents] = useState<DeployedAgent[]>([]);
   const [editingAgent, setEditingAgent] = useState<DeployedAgent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -59,7 +61,7 @@ export default function DeployedAgents() {
 
   const deleteAgent = async (agentId: string) => {
     if (!isConnected || !address) {
-      alert('⚠️ Please connect your wallet to delete an agent.');
+      toast.warning('Please connect your wallet to delete an agent.');
       return;
     }
 
@@ -81,11 +83,11 @@ export default function DeployedAgents() {
 
       // Remove agent from list
       setAgents((prev) => prev.filter((agent) => agent.id !== agentId));
-      alert('✅ Agent deleted successfully!');
+      toast.success('Agent deleted successfully!');
     } catch (error) {
       console.error('Error deleting agent:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      alert(`❌ ${errorMessage}`);
+      toast.error(errorMessage);
     }
   };
 
@@ -211,7 +213,7 @@ export default function DeployedAgents() {
                     onClick={() => {
                       const agentCardUrl = `${agent.url}/.well-known/agent.json`;
                       navigator.clipboard.writeText(agentCardUrl);
-                      alert('Agent Card URL copied to clipboard!');
+                      toast.success('Agent Card URL copied to clipboard!');
                     }}
                     className="w-full py-2 bg-white border-2 border-gray-200 text-gray-700 rounded-lg hover:border-purple-300 hover:bg-purple-50 font-semibold transition-all duration-200 text-sm"
                   >
