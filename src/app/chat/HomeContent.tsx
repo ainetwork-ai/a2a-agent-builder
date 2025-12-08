@@ -298,7 +298,7 @@ export default function HomeContent() {
   }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 overflow-hidden">
+    <div className="bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 overflow-hidden flex flex-col" style={{ height: '100dvh' }}>
       {/* Username Setup Modal */}
       {showUsernameModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
