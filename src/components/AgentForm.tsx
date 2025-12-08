@@ -127,7 +127,7 @@ export function AgentForm({ initialData, onSubmit, onCancel, onAutoComplete, isS
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full mt-2 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 placeholder:text-gray-400 transition-all bg-white"
+              className="w-full mt-2 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-base text-gray-900 placeholder:text-gray-400 transition-all bg-white"
               placeholder="e.g. Crypto Tutor"
             />
           </div>
@@ -148,7 +148,7 @@ export function AgentForm({ initialData, onSubmit, onCancel, onAutoComplete, isS
               type="text"
               value={formData.url}
               onChange={(e) => setFormData({ ...formData, url: e.target.value })}
-              className="w-full mt-2 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 placeholder:text-gray-400 transition-all bg-white"
+              className="w-full mt-2 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-base text-gray-900 placeholder:text-gray-400 transition-all bg-white"
               placeholder="https://..."
             />
           </div>
@@ -243,7 +243,7 @@ export function AgentForm({ initialData, onSubmit, onCancel, onAutoComplete, isS
                       type="text"
                       value={skill.name}
                       onChange={(e) => handleSkillChange(skill.id, 'name', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm bg-gray-50 focus:bg-white transition-colors"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-base bg-gray-50 focus:bg-white transition-colors"
                       placeholder="e.g. Technical Analysis"
                     />
                   </div>
