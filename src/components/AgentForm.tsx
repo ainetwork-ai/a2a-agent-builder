@@ -305,7 +305,7 @@ export function AgentForm({ initialData, onSubmit, onCancel, onAutoComplete, isS
                       onKeyDown={(e) => handleKeyDownTag(e, skill.id)}
                       onFocus={() => setFocusedSkillId(skill.id)}
                       onBlur={() => setFocusedSkillId(null)}
-                      className="flex-1 min-w-[120px] bg-transparent outline-none text-sm py-1"
+                      className="flex-1 min-w-[120px] bg-transparent outline-none text-base py-1"
                       placeholder={skill.tags.length === 0 ? 'Type tag and press Enter...' : ''}
                     />
                   </div>
