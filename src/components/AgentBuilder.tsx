@@ -162,6 +162,9 @@ export default function AgentBuilder() {
 
     setAgents(prev => [...prev, newAgent]);
 
+    // Reset deploying state
+    setDeployingAgentId(null);
+
     // Reset form based on mode
     if (mode === 'ai') {
       setPrompt('');

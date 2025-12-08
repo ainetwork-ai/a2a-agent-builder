@@ -463,7 +463,7 @@ export function AgentForm({ initialData, onSubmit, onCancel, onAutoComplete, isS
             disabled={isSubmitting || isAutoCompleting}
             className="flex-1 py-2.5 text-sm bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-semibold shadow-lg transition-[opacity,transform] duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 md:hover:from-purple-700 md:hover:to-blue-700 md:hover:shadow-xl md:hover:-translate-y-0.5"
           >
-            {isSubmitting ? 'Saving...' : submitLabel}
+            {isSubmitting ? (submitLabel === 'Create' ? 'Creating...' : 'Saving...') : submitLabel}
           </button>
         </div>
 
