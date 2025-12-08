@@ -442,7 +442,7 @@ export function AgentForm({ initialData, onSubmit, onCancel, onAutoComplete, isS
             <button
               onClick={() => onAutoComplete(formData)}
               disabled={isAutoCompleting || isSubmitting}
-              className="flex-1 py-2.5 text-sm bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:from-green-600 hover:to-emerald-600 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              className="flex-1 py-2.5 text-sm bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-semibold shadow-lg transition-[opacity,transform] duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 md:hover:from-green-600 md:hover:to-emerald-600 md:hover:shadow-xl md:hover:-translate-y-0.5"
             >
               {isAutoCompleting ? (
                 <span className="flex items-center justify-center gap-1.5">
@@ -461,7 +461,7 @@ export function AgentForm({ initialData, onSubmit, onCancel, onAutoComplete, isS
           <button
             onClick={() => onSubmit(formData)}
             disabled={isSubmitting || isAutoCompleting}
-            className="flex-1 py-2.5 text-sm bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            className="flex-1 py-2.5 text-sm bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-semibold shadow-lg transition-[opacity,transform] duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 md:hover:from-purple-700 md:hover:to-blue-700 md:hover:shadow-xl md:hover:-translate-y-0.5"
           >
             {isSubmitting ? 'Saving...' : submitLabel}
           </button>
