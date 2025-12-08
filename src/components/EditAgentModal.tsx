@@ -50,7 +50,7 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
         prompt: agent.prompt,
       });
     }
-  }, [isOpen, agent]);
+  }, [isOpen, agent.id]); // agent 전체 대신 agent.id만 의존성으로
 
   const handleSave = async (data: AgentBuilderForm & { url?: string }) => {
     setIsSaving(true);
@@ -83,8 +83,14 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+    <div
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-blue-600 text-white p-4 sm:p-6 rounded-t-2xl z-10">
           <div className="flex items-center justify-between">
