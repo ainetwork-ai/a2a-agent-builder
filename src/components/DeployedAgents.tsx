@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import EditAgentModal from './EditAgentModal';
+import ConfirmationModal from './ConfirmationModal';
 import { WalletButton } from './WalletButton';
 import { useAccount } from 'wagmi';
 import { Intent } from '@/types/agent';
@@ -33,6 +34,7 @@ export default function DeployedAgents() {
   const toast = useToast();
   const [agents, setAgents] = useState<DeployedAgent[]>([]);
   const [editingAgent, setEditingAgent] = useState<DeployedAgent | null>(null);
+  const [agentToDelete, setAgentToDelete] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -59,15 +61,18 @@ export default function DeployedAgents() {
     fetchAgents();
   }, [isConnected, address]);
 
-  const deleteAgent = async (agentId: string) => {
+  const deleteAgent = (agentId: string) => {
     if (!isConnected || !address) {
       toast.warning('Please connect your wallet to delete an agent.');
       return;
     }
 
-    if (!confirm('Are you sure you want to delete this agent? This action cannot be undone.')) {
-      return;
-    }
+    setAgentToDelete(agentId);
+  };
+
+  const confirmDeleteAgent = async () => {
+    if (!agentToDelete) return;
+    const agentId = agentToDelete;
 
     try {
       const response = await fetch(`/api/agents/${agentId}`, {
@@ -88,6 +93,8 @@ export default function DeployedAgents() {
       console.error('Error deleting agent:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast.error(errorMessage);
+    } finally {
+      setAgentToDelete(null);
     }
   };
 
@@ -273,6 +280,17 @@ export default function DeployedAgents() {
           }}
         />
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={!!agentToDelete}
+        onClose={() => setAgentToDelete(null)}
+        onConfirm={confirmDeleteAgent}
+        title="Delete Agent"
+        message="Are you sure you want to delete this agent? This action cannot be undone."
+        confirmLabel="Delete Agent"
+        isDanger={true}
+      />
     </div>
   );
 }
