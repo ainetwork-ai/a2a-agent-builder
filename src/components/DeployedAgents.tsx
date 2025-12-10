@@ -9,6 +9,7 @@ import { useAccount } from 'wagmi';
 import { Intent } from '@/types/agent';
 import { getDisplayModelName } from '@/lib/utils/modelUtils';
 import { useToast } from '@/contexts/ToastContext';
+import { safeFetch } from '@/lib/utils/safeFetch';
 
 interface DeployedAgent {
   id: string;
@@ -48,8 +49,7 @@ export default function DeployedAgents() {
           return;
         }
 
-        const response = await fetch(`/api/agents/list?address=${address}`);
-        const data = await response.json();
+        const data = await safeFetch(`/api/agents/list?address=${address}`);
         setAgents(data.agents || []);
       } catch (error) {
         console.error('Failed to fetch agents:', error);
@@ -75,16 +75,11 @@ export default function DeployedAgents() {
     const agentId = agentToDelete;
 
     try {
-      const response = await fetch(`/api/agents/${agentId}`, {
+      await safeFetch(`/api/agents/${agentId}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ address: address }),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete agent');
-      }
 
       // Remove agent from list
       setAgents((prev) => prev.filter((agent) => agent.id !== agentId));
@@ -269,8 +264,7 @@ export default function DeployedAgents() {
                   setAgents([]);
                   return;
                 }
-                const response = await fetch(`/api/agents/list?address=${address}`);
-                const data = await response.json();
+                const data = await safeFetch(`/api/agents/list?address=${address}`);
                 setAgents(data.agents || []);
               } catch (error) {
                 console.error('Failed to fetch agents:', error);

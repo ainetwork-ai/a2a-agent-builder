@@ -5,6 +5,7 @@ import { Skill, AgentBuilderForm, Intent } from '@/types/agent';
 import { useAccount } from 'wagmi';
 import { AgentForm } from './AgentForm';
 import { useToast } from '@/contexts/ToastContext';
+import { safeFetch } from '@/lib/utils/safeFetch';
 
 interface EditAgentModalProps {
   isOpen: boolean;
@@ -57,7 +58,7 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
   const handleSave = async (data: AgentBuilderForm & { url?: string }) => {
     setIsSaving(true);
     try {
-      const response = await fetch(`/api/agents/${agent.id}/edit`, {
+      await safeFetch(`/api/agents/${agent.id}/edit`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -65,12 +66,7 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
           address,
         }),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update agent');
-      }
-
+      
       toast.success('Agent updated successfully!');
       onSuccess();
       onClose();
