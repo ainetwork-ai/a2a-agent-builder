@@ -106,6 +106,26 @@ export default function AgentBuilder() {
     const agentData = data || (mode === 'ai' ? generatedForm : manualFormData);
     if (!agentData) return;
 
+    const {
+      name,
+      description,
+      modelProvider,
+      modelName,
+      prompt,
+    } = agentData;
+
+    const requiredFields = [];
+    if (!name.trim()) requiredFields.push('Agent Name');
+    if (!description.trim()) requiredFields.push('description');
+    if (!modelProvider) requiredFields.push('modelProvider');
+    if (!modelName) requiredFields.push('modelName');
+    if (!prompt.trim()) requiredFields.push('System Prompt');
+
+    if (requiredFields.length > 0) {
+      toast.warning(`Please fill in the following required fields: ${requiredFields.join(', ')}.`);
+      return;
+    }
+
     setDeployingAgentId('generating');
 
     // Use window.location.origin for dynamic URL generation
