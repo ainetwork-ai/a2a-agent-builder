@@ -56,6 +56,28 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
   }, [isOpen, agent.id]); // agent 전체 대신 agent.id만 의존성으로
 
   const handleSave = async (data: AgentBuilderForm & { url?: string }) => {
+    const {
+      name,
+      description,
+      url,
+      modelProvider,
+      modelName,
+      prompt,
+    } = data;
+
+    const requiredFields = [];
+    if (!name.trim()) requiredFields.push('Agent Name');
+    if (!description.trim()) requiredFields.push('description');
+    if (!url?.trim()) requiredFields.push('Agent URL');
+    if (!modelProvider) requiredFields.push('modelProvider');
+    if (!modelName) requiredFields.push('modelName');
+    if (!prompt.trim()) requiredFields.push('System Prompt');
+
+    if (requiredFields.length > 0) {
+      toast.warning(`Please fill in the following required fields: ${requiredFields.join(', ')}.`);
+      return;
+    }
+
     setIsSaving(true);
     try {
       await safeFetch(`/api/agents/${agent.id}/edit`, {
@@ -66,7 +88,7 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
           address,
         }),
       });
-      
+
       toast.success('Agent updated successfully!');
       onSuccess();
       onClose();
