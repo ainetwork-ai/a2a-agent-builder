@@ -3,11 +3,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { A2AClient } from "@a2a-js/sdk/client";
-import { SendMessageSuccessResponse } from "@a2a-js/sdk";
+import { AgentCard, SendMessageSuccessResponse } from "@a2a-js/sdk";
 import { Message, MessageSendParams, TextPart } from "@a2a-js/sdk";
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Archive, Send } from 'lucide-react';
+import { safeFetch } from '@/lib/utils/safeFetch';
 
 const DEFAULT_AGENT_ID = 'socrates-web3-tutor';
 const A2A_API_PREFIX = "/api/agents";
@@ -63,11 +64,7 @@ export default function HomeContent() {
 
         // First check if the agent card is accessible
         console.log('📡 Fetching agent card...');
-        const cardResponse = await fetch(cardUrl);
-        if (!cardResponse.ok) {
-          throw new Error(`Agent card not found (${cardResponse.status}). Did you deploy the agent?`);
-        }
-        const card = await cardResponse.json();
+        const card = await safeFetch<AgentCard>(cardUrl);
         console.log('✅ Agent card loaded:', card.name);
         setAgentName(card.name || 'Unknown Agent');
 
@@ -116,25 +113,21 @@ export default function HomeContent() {
 
       const statusUrl = `${baseUrl}/api/agents/${agentId}/status?${params.toString()}`;
 
-      const response = await fetch(statusUrl);
-      if (response.ok) {
-        const data = await response.json();
-        console.log('✅ Status fetched:', data);
+      const data = await safeFetch(statusUrl);
+      console.log('✅ Status fetched:', data);
 
-        // Update thinking facts
-        if (data.thinking?.facts) {
-          setThinkingFacts(data.thinking.facts);
-        } else {
-          setThinkingFacts([]);
-        }
+      // Update thinking facts
+      if (data.thinking?.facts) {
+        setThinkingFacts(data.thinking.facts);
+      } else {
+        setThinkingFacts([]);
+      }
 
-        // Update caring facts
-        if (data.caring?.facts) {
-          setCaringFacts(data.caring.facts);
-        } else {
-          setCaringFacts([]);
-        }
-
+      // Update caring facts
+      if (data.caring?.facts) {
+        setCaringFacts(data.caring.facts);
+      } else {
+        setCaringFacts([]);
       }
     } catch (err) {
       console.error('Failed to fetch agent status:', err);
@@ -151,7 +144,7 @@ export default function HomeContent() {
         : `${window.location.origin}/api/agents/${agentId}/update-memory`;
 
       console.log('🔄 Updating memory...', intent ? `(intent: ${intent})` : '', username ? `(user: ${username})` : '');
-      const response = await fetch(updateUrl, {
+      const data = await safeFetch(updateUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -161,14 +154,10 @@ export default function HomeContent() {
           username // Pass username for caring memory
         })
       });
+      console.log('✅ Memory updated:', data);
 
-      if (response.ok) {
-        const data = await response.json();
-        console.log('✅ Memory updated:', data);
-
-        // Fetch updated status to get new thinking facts
-        await fetchStatus();
-      }
+      // Fetch updated status to get new thinking facts
+      await fetchStatus();
     } catch (err) {
       console.error('Failed to update memory:', err);
     }
