@@ -5,6 +5,7 @@ import { Skill, AgentBuilderForm, Intent } from '@/types/agent';
 import { useAccount } from 'wagmi';
 import { AgentForm } from './AgentForm';
 import { useToast } from '@/contexts/ToastContext';
+import { safeFetch } from '@/lib/utils/safeFetch';
 
 interface EditAgentModalProps {
   isOpen: boolean;
@@ -55,9 +56,31 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
   }, [isOpen, agent.id]); // agent 전체 대신 agent.id만 의존성으로
 
   const handleSave = async (data: AgentBuilderForm & { url?: string }) => {
+    const {
+      name,
+      description,
+      url,
+      modelProvider,
+      modelName,
+      prompt,
+    } = data;
+
+    const requiredFields = [];
+    if (!name.trim()) requiredFields.push('Agent Name');
+    if (!description.trim()) requiredFields.push('description');
+    if (!url?.trim()) requiredFields.push('Agent URL');
+    if (!modelProvider) requiredFields.push('modelProvider');
+    if (!modelName) requiredFields.push('modelName');
+    if (!prompt.trim()) requiredFields.push('System Prompt');
+
+    if (requiredFields.length > 0) {
+      toast.warning(`Please fill in the following required fields: ${requiredFields.join(', ')}.`);
+      return;
+    }
+
     setIsSaving(true);
     try {
-      const response = await fetch(`/api/agents/${agent.id}/edit`, {
+      await safeFetch(`/api/agents/${agent.id}/edit`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -65,11 +88,6 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
           address,
         }),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update agent');
-      }
 
       toast.success('Agent updated successfully!');
       onSuccess();

@@ -11,6 +11,7 @@ import { AgentForm } from './AgentForm';
 import { getDisplayModelName } from '@/lib/utils/modelUtils';
 import { CopyButton } from './CopyButton';
 import { useToast } from '@/contexts/ToastContext';
+import { safeFetch } from '@/lib/utils/safeFetch';
 
 type BuilderMode = 'ai' | 'manual';
 
@@ -46,16 +47,13 @@ export default function AgentBuilder() {
   useEffect(() => {
     const fetchModelConfig = async () => {
       try {
-        const response = await fetch('/api/model-config');
-        if (response.ok) {
-          const config = await response.json();
-          setModelConfig(config);
-          setManualFormData(prev => ({
-            ...prev,
-            modelProvider: config.modelProvider,
-            modelName: config.modelName,
-          }));
-        }
+        const config = await safeFetch('/api/model-config');
+        setModelConfig(config);
+        setManualFormData(prev => ({
+          ...prev,
+          modelProvider: config.modelProvider,
+          modelName: config.modelName,
+        }));
       } catch (error) {
         console.error('Error fetching model config:', error);
       }
@@ -71,18 +69,11 @@ export default function AgentBuilder() {
 
     setIsGenerating(true);
     try {
-      const response = await fetch('/api/generate-agent', {
+      const data = await safeFetch('/api/generate-agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt }),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to generate agent');
-      }
-
-      const data = await response.json();
       setGeneratedForm(data);
     } catch (error) {
       console.error('Error generating agent:', error);
@@ -96,18 +87,11 @@ export default function AgentBuilder() {
   const autoCompleteManualForm = async (currentFormData: AgentBuilderForm) => {
     setIsGenerating(true);
     try {
-      const response = await fetch('/api/generate-agent', {
+      const data = await safeFetch('/api/generate-agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ partialData: currentFormData }),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to auto-complete agent');
-      }
-
-      const data = await response.json();
       setManualFormData(data);
     } catch (error) {
       console.error('Error auto-completing agent:', error);
@@ -121,6 +105,26 @@ export default function AgentBuilder() {
   const createAgent = async (data?: AgentBuilderForm) => {
     const agentData = data || (mode === 'ai' ? generatedForm : manualFormData);
     if (!agentData) return;
+
+    const {
+      name,
+      description,
+      modelProvider,
+      modelName,
+      prompt,
+    } = agentData;
+
+    const requiredFields = [];
+    if (!name.trim()) requiredFields.push('Agent Name');
+    if (!description.trim()) requiredFields.push('description');
+    if (!modelProvider) requiredFields.push('modelProvider');
+    if (!modelName) requiredFields.push('modelName');
+    if (!prompt.trim()) requiredFields.push('System Prompt');
+
+    if (requiredFields.length > 0) {
+      toast.warning(`Please fill in the following required fields: ${requiredFields.join(', ')}.`);
+      return;
+    }
 
     setDeployingAgentId('generating');
 
@@ -222,7 +226,7 @@ export default function AgentBuilder() {
 
     setDeployingAgentId(agent.id);
     try {
-      const response = await fetch('/api/deploy-agent', {
+      await safeFetch('/api/deploy-agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -230,11 +234,6 @@ export default function AgentBuilder() {
           creatorAddress: address,
         }),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to deploy agent');
-      }
 
       // Update deployed status
       setAgents(prev => prev.map(a =>

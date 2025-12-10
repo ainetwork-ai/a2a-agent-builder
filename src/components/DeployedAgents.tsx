@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import EditAgentModal from './EditAgentModal';
 import ConfirmationModal from './ConfirmationModal';
@@ -9,6 +9,7 @@ import { useAccount } from 'wagmi';
 import { Intent } from '@/types/agent';
 import { getDisplayModelName } from '@/lib/utils/modelUtils';
 import { useToast } from '@/contexts/ToastContext';
+import { safeFetch } from '@/lib/utils/safeFetch';
 
 interface DeployedAgent {
   id: string;
@@ -37,29 +38,26 @@ export default function DeployedAgents() {
   const [agentToDelete, setAgentToDelete] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchAgents = async () => {
-      setIsLoading(true);
-      try {
-        // Only fetch agents if wallet is connected
-        if (!isConnected || !address) {
-          setAgents([]);
-          setIsLoading(false);
-          return;
-        }
-
-        const response = await fetch(`/api/agents/list?address=${address}`);
-        const data = await response.json();
-        setAgents(data.agents || []);
-      } catch (error) {
-        console.error('Failed to fetch agents:', error);
-      } finally {
+  const fetchAgents = useCallback(async () => {
+    try {
+      // Only fetch agents if wallet is connected
+      if (!isConnected || !address) {
+        setAgents([]);
         setIsLoading(false);
+        return;
       }
-    };
 
-    fetchAgents();
+      const data = await safeFetch(`/api/agents/list?address=${address}`);
+      setAgents(data.agents || []);
+    } catch (error) {
+      console.error('Failed to fetch agents:', error);
+    }
   }, [isConnected, address]);
+
+  useEffect(() => {
+    setIsLoading(true);
+    fetchAgents().then(() => setIsLoading(false));
+  }, [fetchAgents]);
 
   const deleteAgent = (agentId: string) => {
     if (!isConnected || !address) {
@@ -75,16 +73,11 @@ export default function DeployedAgents() {
     const agentId = agentToDelete;
 
     try {
-      const response = await fetch(`/api/agents/${agentId}`, {
+      await safeFetch(`/api/agents/${agentId}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ address: address }),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete agent');
-      }
 
       // Remove agent from list
       setAgents((prev) => prev.filter((agent) => agent.id !== agentId));
@@ -261,23 +254,7 @@ export default function DeployedAgents() {
           isOpen={!!editingAgent}
           onClose={() => setEditingAgent(null)}
           agent={editingAgent}
-          onSuccess={() => {
-            // Refresh agents list
-            const fetchAgents = async () => {
-              try {
-                if (!isConnected || !address) {
-                  setAgents([]);
-                  return;
-                }
-                const response = await fetch(`/api/agents/list?address=${address}`);
-                const data = await response.json();
-                setAgents(data.agents || []);
-              } catch (error) {
-                console.error('Failed to fetch agents:', error);
-              }
-            };
-            fetchAgents();
-          }}
+          onSuccess={fetchAgents}
         />
       )}
 

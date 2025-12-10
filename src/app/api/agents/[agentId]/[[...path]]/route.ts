@@ -76,7 +76,6 @@ ${a2a}
     const contextId = requestContext.contextId;
     const key = this.getContextKey(contextId);
     const incomingMessage = requestContext.userMessage;
-    console.log(`@@@@@@@@@@@@@ ${contextId} ${incomingMessage.metadata?.agentSkills}`);
 
     // Classify intent and get relevant memory
     let intent = 'general';
