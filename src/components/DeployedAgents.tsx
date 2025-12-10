@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import EditAgentModal from './EditAgentModal';
 import ConfirmationModal from './ConfirmationModal';
@@ -38,28 +38,26 @@ export default function DeployedAgents() {
   const [agentToDelete, setAgentToDelete] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchAgents = async () => {
-      setIsLoading(true);
-      try {
-        // Only fetch agents if wallet is connected
-        if (!isConnected || !address) {
-          setAgents([]);
-          setIsLoading(false);
-          return;
-        }
-
-        const data = await safeFetch(`/api/agents/list?address=${address}`);
-        setAgents(data.agents || []);
-      } catch (error) {
-        console.error('Failed to fetch agents:', error);
-      } finally {
+  const fetchAgents = useCallback(async () => {
+    try {
+      // Only fetch agents if wallet is connected
+      if (!isConnected || !address) {
+        setAgents([]);
         setIsLoading(false);
+        return;
       }
-    };
 
-    fetchAgents();
+      const data = await safeFetch(`/api/agents/list?address=${address}`);
+      setAgents(data.agents || []);
+    } catch (error) {
+      console.error('Failed to fetch agents:', error);
+    }
   }, [isConnected, address]);
+
+  useEffect(() => {
+    setIsLoading(true);
+    fetchAgents().then(() => setIsLoading(false));
+  }, [fetchAgents]);
 
   const deleteAgent = (agentId: string) => {
     if (!isConnected || !address) {
@@ -256,22 +254,7 @@ export default function DeployedAgents() {
           isOpen={!!editingAgent}
           onClose={() => setEditingAgent(null)}
           agent={editingAgent}
-          onSuccess={() => {
-            // Refresh agents list
-            const fetchAgents = async () => {
-              try {
-                if (!isConnected || !address) {
-                  setAgents([]);
-                  return;
-                }
-                const data = await safeFetch(`/api/agents/list?address=${address}`);
-                setAgents(data.agents || []);
-              } catch (error) {
-                console.error('Failed to fetch agents:', error);
-              }
-            };
-            fetchAgents();
-          }}
+          onSuccess={fetchAgents}
         />
       )}
 
