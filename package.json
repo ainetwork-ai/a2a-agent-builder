@@ -1,6 +1,6 @@
 {
   "name": "a2a-agent-builder",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "type": "module",
   "engines": {
@@ -17,9 +17,12 @@
     "@a2a-js/sdk": "^0.3.3",
     "@coinbase/onchainkit": "^1.1.2",
     "@google/generative-ai": "^0.24.1",
+    "@radix-ui/react-dialog": "^1.1.15",
     "@sentry/nextjs": "^10.29.0",
     "@tanstack/react-query": "^5.90.10",
     "@upstash/redis": "^1.35.5",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "ioredis": "^5.8.2",
     "lucide-react": "^0.555.0",
     "next": "15.5.9",
@@ -27,6 +30,7 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "slugify": "^1.6.6",
+    "tailwind-merge": "^3.4.0",
     "transliteration": "^2.3.5",
     "uuid": "^11.1.0",
     "viem": "^2.21.53",
@@ -45,6 +49,7 @@
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.5",
+    "tw-animate-css": "^1.4.0",
     "typescript": "^5.9.2"
   }
 }

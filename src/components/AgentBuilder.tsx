@@ -12,8 +12,17 @@ import { getDisplayModelName } from '@/lib/utils/modelUtils';
 import { CopyButton } from './CopyButton';
 import { useToast } from '@/contexts/ToastContext';
 import { safeFetch } from '@/lib/utils/safeFetch';
+import { Address } from 'viem';
+import HolderModal from './HolderModal';
 
 type BuilderMode = 'ai' | 'manual';
+
+const TARGET_CONTRACTS = [
+  { chain: "ethereum", standard: "erc20", address: "0x3A810ff7211b40c4fA76205a14efe161615d0385", source: "onchain" },
+  { chain: "base", standard: "erc20", address: "0xD4423795fd904D9B87554940a95FB7016f172773", source: "onchain" },
+  { chain: "base", standard: "erc20", address: "0x70e68AF68933D976565B1882D80708244E0C4fe9", source: "onchain" },
+  { chain: "ethereum", standard: "erc1155", address: "0x495f947276749Ce646f68AC8c248420045cb7b5e", source: "opensea", collection: "mysterious-minieggs" }
+];
 
 export default function AgentBuilder() {
   const { address, isConnected } = useAccount();
@@ -43,6 +52,7 @@ export default function AgentBuilder() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [deployedAgent, setDeployedAgent] = useState<{ url: string; cardUrl: string } | null>(null);
   const [deployingAgentId, setDeployingAgentId] = useState<string | null>(null);
+  const [isHolderModalOpen, setIsHolderModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchModelConfig = async () => {
@@ -61,11 +71,43 @@ export default function AgentBuilder() {
     fetchModelConfig();
   }, []);
 
+
+  const checkHolderStatus = async (userAddress: Address | undefined) => {
+    try {
+      if (!userAddress) {
+        throw new Error("Wallet connection has been disconnected. Please reconnect wallet.")
+     }
+    const requestBody = {
+        walletAddress: userAddress,
+        contracts: TARGET_CONTRACTS,
+    }
+        const data = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/token/balance`, {
+          method: 'POST',
+          body: JSON.stringify(requestBody),
+          headers: {
+                'Content-Type': 'application/json',
+          },
+        });
+        const result = await data.json()
+        const isHolder = result.results.some((value: { isHolder: boolean; }) => value.isHolder === true)
+        return isHolder
+    } catch (error) {
+        console.error("isHolder API Error", error)
+    }
+    
+}
+
   const generateAgentFromPrompt = async () => {
     if (!prompt.trim()) {
       toast.warning('Please enter a prompt');
       return;
     }
+
+  const isHolder = await checkHolderStatus(address)
+  if (!isHolder) {
+    setIsHolderModalOpen(true) 
+    return;
+  }
 
     setIsGenerating(true);
     try {
@@ -85,7 +127,13 @@ export default function AgentBuilder() {
   };
 
   const autoCompleteManualForm = async (currentFormData: AgentBuilderForm) => {
+    const isHolder = await checkHolderStatus(address)
+    if (!isHolder) {
+      setIsHolderModalOpen(true) 
+      return;
+    }
     setIsGenerating(true);
+    
     try {
       const data = await safeFetch('/api/generate-agent', {
         method: 'POST',
@@ -105,6 +153,12 @@ export default function AgentBuilder() {
   const createAgent = async (data?: AgentBuilderForm) => {
     const agentData = data || (mode === 'ai' ? generatedForm : manualFormData);
     if (!agentData) return;
+
+    const isHolder = await checkHolderStatus(address)
+    if (!isHolder) {
+      setIsHolderModalOpen(true) 
+      return;
+    }
 
     const {
       name,
@@ -554,6 +608,7 @@ export default function AgentBuilder() {
           </div>
         </div>
       )}
+      <HolderModal open={isHolderModalOpen} onOpenChange={setIsHolderModalOpen}/>
     </div>
   );
 }
