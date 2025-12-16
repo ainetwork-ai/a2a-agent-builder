@@ -18,7 +18,16 @@ else
 fi
 
 echo "Building Docker image '${image_name}'..."
-sudo docker build -t ${image_name} .
+# Load environment variables and pass NEXT_PUBLIC_* vars to build
+set -a
+. ./.env.${env}
+set +a
+
+sudo docker build \
+  --build-arg NEXT_PUBLIC_SITE_URL="${NEXT_PUBLIC_SITE_URL}" \
+  --build-arg NEXT_PUBLIC_API_BASE_URL="${NEXT_PUBLIC_API_BASE_URL}" \
+  --build-arg NEXT_PUBLIC_SENTRY_DSN="${NEXT_PUBLIC_SENTRY_DSN}" \
+  -t ${image_name} .
 
 echo "Removing existing container '${container_name}' if exists..."
 sudo docker rm -f ${container_name} || true
