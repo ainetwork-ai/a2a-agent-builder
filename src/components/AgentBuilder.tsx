@@ -81,13 +81,13 @@ export default function AgentBuilder() {
         walletAddress: userAddress,
         contracts: TARGET_CONTRACTS,
     }
-        const data = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_ADDRESS}/api/token/balance`, {
-            method: 'POST',
-            body: JSON.stringify(requestBody),
-            headers: {
-                'Content-Type': 'application/json'
-            },
-        })
+        const data = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/token/balance`, {
+          method: 'POST',
+          body: JSON.stringify(requestBody),
+          headers: {
+                'Content-Type': 'application/json',
+          },
+        });
         const result = await data.json()
         const isHolder = result.results.some((value: { isHolder: boolean; }) => value.isHolder === true)
         return isHolder
