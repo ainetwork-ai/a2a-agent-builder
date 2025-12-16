@@ -20,7 +20,7 @@ fi
 echo "Building Docker image '${image_name}'..."
 # Load environment variables and pass NEXT_PUBLIC_* vars to build
 set -a
-source ./.env.${env}
+. ./.env.${env}
 set +a
 
 sudo docker build \
