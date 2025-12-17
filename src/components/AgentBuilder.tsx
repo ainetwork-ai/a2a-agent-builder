@@ -423,7 +423,7 @@ export default function AgentBuilder() {
                         initialData={generatedForm}
                         onSubmit={(data) => createAgent(data)}
                         onCancel={() => setGeneratedForm(null)}
-                        isSubmitting={!!deployingAgentId}
+                        isSubmitting={!!deployingAgentId || isLoading}
                         submitLabel="Create"
                       />
                     </div>
@@ -439,7 +439,7 @@ export default function AgentBuilder() {
                   initialData={manualFormData}
                   onSubmit={(data) => createAgent(data)}
                   onAutoComplete={autoCompleteManualForm}
-                  isSubmitting={!!deployingAgentId}
+                  isSubmitting={!!deployingAgentId || isLoading}
                   isAutoCompleting={isGenerating}
                   submitLabel="Create"
                   showAutoComplete={true}
