@@ -14,6 +14,7 @@ import { useToast } from '@/contexts/ToastContext';
 import { safeFetch } from '@/lib/utils/safeFetch';
 import { Address } from 'viem';
 import HolderModal from './HolderModal';
+import LoadingModal from './LoadingModal';
 
 type BuilderMode = 'ai' | 'manual';
 
@@ -53,6 +54,7 @@ export default function AgentBuilder() {
   const [deployedAgent, setDeployedAgent] = useState<{ url: string; cardUrl: string } | null>(null);
   const [deployingAgentId, setDeployingAgentId] = useState<string | null>(null);
   const [isHolderModalOpen, setIsHolderModalOpen] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchModelConfig = async () => {
@@ -74,6 +76,7 @@ export default function AgentBuilder() {
 
   const checkHolderStatus = async (userAddress: Address | undefined) => {
     try {
+      setIsLoading(true)
       if (!userAddress) {
         throw new Error("Wallet connection has been disconnected. Please reconnect wallet.")
      }
@@ -90,10 +93,12 @@ export default function AgentBuilder() {
         });
         const result = await data.json()
         const isHolder = result.results.some((value: { isHolder: boolean; }) => value.isHolder === true)
-        return isHolder
+      setIsLoading(false)
+      return isHolder
     } catch (error) {
         console.error("isHolder API Error", error)
-    }
+        setIsLoading(false)
+      }
     
 }
 
@@ -608,6 +613,7 @@ export default function AgentBuilder() {
           </div>
         </div>
       )}
+      <LoadingModal open={isLoading} title='Holder Checking...' message='are you ai network ecosystem holder?'/>
       <HolderModal open={isHolderModalOpen} onOpenChange={setIsHolderModalOpen}/>
     </div>
   );
