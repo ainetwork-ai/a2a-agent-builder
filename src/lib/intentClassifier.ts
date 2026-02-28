@@ -84,6 +84,9 @@ Be as specific as possible:
 - Use company names: "tesla" NOT "ev_company"
 - Use person names: "elon_musk" NOT "entrepreneur"
 
+The user may write in any language (Korean or English). Classify the intent based on MEANING, not language.
+Match keywords semantically across languages (e.g., "블록체인" matches "blockchain" intent).
+
 Format: 1-2 words, lowercase, underscore for spaces.
 Keep the intent same as the previous one if the conversation flow hasn't changed.${previousIntentContext}
 

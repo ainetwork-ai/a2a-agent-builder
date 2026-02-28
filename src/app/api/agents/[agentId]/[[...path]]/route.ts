@@ -53,6 +53,14 @@ class DynamicAgentExecutor implements AgentExecutor {
 
     const basePrompt = `${this.prompt}
 
+LANGUAGE RULE:
+- IMPORTANT: You MUST respond ENTIRELY in the same language as the user's latest message.
+- If the user writes in Korean, respond ONLY in Korean. Do NOT add English translations, parenthetical English, or any English words alongside Korean.
+- If the user writes in English, respond ONLY in English.
+- If the user switches language mid-conversation, follow their new language immediately.
+- NEVER mix languages in a single response. No "(like this)", no "예를 들어 (for example)" patterns.
+- This rule overrides the language of your base instructions above.
+
 RESPONSE STYLE:
 - Keep responses SHORT and conversational (like a natural chat)
 - Match the user's message length and energy
@@ -90,7 +98,7 @@ ${a2a}
         If the other agents can help you, you can mention the agent name and make a request to the other agent.
         like this: "@{agent_name} - {request_to_help_agent_sentence}"
 
-        Agent Skill list:
+        Agent Skill list
       `;
       a2aPrompt += agentSkills.map(agent => `${agent.name}: [${agent.skills.map(skill => `"${skill.name}: ${skill.description}"`).join(', ')}]`).join('\n');
     }
