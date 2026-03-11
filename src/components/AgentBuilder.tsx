@@ -80,6 +80,9 @@ export default function AgentBuilder() {
 
 
   const checkHolderStatus = async (userAddress: Address | undefined) => {
+    if (process.env.NODE_ENV === 'development') {
+      return true;
+    }
     try {
       if (!userAddress) {
         throw new Error("Wallet connection has been disconnected. Please reconnect wallet.")
