@@ -80,7 +80,7 @@ export default function AgentBuilder() {
 
 
   const checkHolderStatus = async (userAddress: Address | undefined) => {
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NEXT_PUBLIC_SKIP_HOLDER_CHECK === 'true') {
       return true;
     }
     try {
@@ -113,11 +113,11 @@ export default function AgentBuilder() {
       return;
     }
 
-  const isHolder = await checkHolderStatus(address)
-  if (!isHolder) {
-    setIsHolderModalOpen(true) 
-    return;
-  }
+    const isHolder = await checkHolderStatus(address)
+    if (!isHolder) {
+      setIsHolderModalOpen(true) 
+      return;
+    }
 
     setIsGenerating(true);
     try {
@@ -164,9 +164,9 @@ export default function AgentBuilder() {
     const agentData = data || (mode === 'ai' ? generatedForm : manualFormData);
     if (!agentData) return;
 
-    const isHolder = await checkHolderStatus(address)
+    const isHolder = await checkHolderStatus(address);
     if (!isHolder) {
-      setIsHolderModalOpen(true) 
+      setIsHolderModalOpen(true);
       return;
     }
 
