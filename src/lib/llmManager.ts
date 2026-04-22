@@ -1,4 +1,5 @@
 import { OpenAI, AzureOpenAI } from 'openai';
+import { getLLMRoutingContext, HEADER_THREAD_ID, HEADER_AGENT_ID } from './requestContext';
 
 interface LLMConfig {
   apiUrl?: string;
@@ -98,11 +99,24 @@ class LLMManager {
         ? { max_completion_tokens: maxTokens }
         : { max_tokens: maxTokens };
 
-      const response = await client.chat.completions.create({
-        messages,
-        ...tokenParam,
-        model: this.config.modelName,
-      });
+      const routing = getLLMRoutingContext();
+      const requestOptions = (routing.threadId || routing.agentId)
+        ? {
+            headers: {
+              ...(routing.threadId && { [HEADER_THREAD_ID]: routing.threadId }),
+              ...(routing.agentId && { [HEADER_AGENT_ID]: routing.agentId }),
+            },
+          }
+        : undefined;
+
+      const response = await client.chat.completions.create(
+        {
+          messages,
+          ...tokenParam,
+          model: this.config.modelName,
+        },
+        requestOptions
+      );
 
       const content = response.choices[0]?.message?.content;
       if (!content) {

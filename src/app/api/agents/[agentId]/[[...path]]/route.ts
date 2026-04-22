@@ -18,6 +18,7 @@ import { autoEvolveAfterConversation } from '@/lib/thinkingEvolution';
 import { callLLM } from '@/lib/llmManager';
 import { getIntents } from '@/lib/intentStore';
 import { buildPromptWithIntents } from '@/lib/promptBuilder';
+import { llmRoutingStorage, getLLMRoutingContext, withLLMRouting } from '@/lib/requestContext';
 import type { Skill } from '@/types/agent';
 
 const AGENT_CARD_PATH = ".well-known/agent.json";
@@ -81,186 +82,191 @@ ${a2a}
     requestContext: RequestContext,
     eventBus: ExecutionEventBus
   ): Promise<void> {
-    const contextId = requestContext.contextId;
-    const key = this.getContextKey(contextId);
-    const incomingMessage = requestContext.userMessage;
+    const incoming = getLLMRoutingContext();
+    const effectiveThreadId = incoming.threadId ?? requestContext.contextId;
 
-    // Classify intent and get relevant memory
-    let intent = 'general';
-    let thinking = '';
-    let caring = '';
-    let a2aPrompt = '';
+    return llmRoutingStorage.run({ threadId: effectiveThreadId, agentId: this.agentId }, async () => {
+      const contextId = requestContext.contextId;
+      const key = this.getContextKey(contextId);
+      const incomingMessage = requestContext.userMessage;
 
-    if (incomingMessage.metadata?.agentSkills) {
-      const { agentSkills } = incomingMessage.metadata as { agentSkills: { name: string, skills: Skill[]}[] };
-      a2aPrompt = `
-        If you need to collaborate with other agents, use the following information to help you:
-        If the other agents can help you, you can mention the agent name and make a request to the other agent.
-        like this: "@{agent_name} - {request_to_help_agent_sentence}"
+      // Classify intent and get relevant memory
+      let intent = 'general';
+      let thinking = '';
+      let caring = '';
+      let a2aPrompt = '';
 
-        Agent Skill list
-      `;
-      a2aPrompt += agentSkills.map(agent => `${agent.name}: [${agent.skills.map(skill => `"${skill.name}: ${skill.description}"`).join(', ')}]`).join('\n');
-    }
+      if (incomingMessage.metadata?.agentSkills) {
+        const { agentSkills } = incomingMessage.metadata as { agentSkills: { name: string, skills: Skill[]}[] };
+        a2aPrompt = `
+          If you need to collaborate with other agents, use the following information to help you:
+          If the other agents can help you, you can mention the agent name and make a request to the other agent.
+          like this: "@{agent_name} - {request_to_help_agent_sentence}"
 
-    if (incomingMessage) {
+          Agent Skill list
+        `;
+        a2aPrompt += agentSkills.map(agent => `${agent.name}: [${agent.skills.map(skill => `"${skill.name}: ${skill.description}"`).join(', ')}]`).join('\n');
+      }
+
+      if (incomingMessage) {
+        try {
+          // Rate limit intent classification to once per minute
+          const now = Date.now();
+          const classificationKey = `${this.agentId}-${contextId}`;
+          const lastClassification = DynamicAgentExecutor.lastIntentClassificationTime[classificationKey];
+
+          if (lastClassification && (now - lastClassification) < DynamicAgentExecutor.MIN_INTENT_CLASSIFICATION_INTERVAL_MS) {
+            // Use previous intent (skip LLM call)
+            const previousIntent = await getLastIntent(this.agentId);
+            intent = previousIntent || 'general';
+            const waitTime = Math.ceil((DynamicAgentExecutor.MIN_INTENT_CLASSIFICATION_INTERVAL_MS - (now - lastClassification)) / 1000);
+            console.log(`⏭️ [Intent] Using previous intent: ${intent} (wait ${waitTime}s for re-classification)`);
+          } else {
+            // Classify intent with LLM
+            const existingHistory = DynamicAgentExecutor.historyStore[key] || [];
+            const recentHistory = existingHistory.slice(-6);
+            const messagesForContext = [...recentHistory, incomingMessage];
+            const conversationText = messagesForContext
+              .map(msg => {
+                const textPart = msg.parts.find(part => part.kind === "text");
+                return `${msg.role}: ${textPart && 'text' in textPart ? textPart.text : ""}`;
+              })
+              .join('\n');
+
+            const previousIntent = await getLastIntent(this.agentId);
+            intent = await classifyIntent(this.agentId, conversationText, previousIntent);
+
+            // Update last classification time
+            DynamicAgentExecutor.lastIntentClassificationTime[classificationKey] = now;
+            console.log('🎯 [Intent] Classified:', intent, previousIntent ? `(previous: ${previousIntent})` : '');
+          }
+
+          // Get thinking based on intent
+          thinking = await getThinkingMemory(this.agentId, intent);
+
+          // Get caring based on user (contextId as username)
+          caring = await getUserCaring(this.agentId, contextId);
+
+          console.log('📖 Using memory:', { intent, thinking, username: contextId, caring });
+        } catch (error) {
+          console.error('Error getting memory:', error);
+        }
+      }
+
+      // Initialize history with system prompt if needed
+      if (!DynamicAgentExecutor.historyStore[key]) {
+        DynamicAgentExecutor.historyStore[key] = [];
+        console.log("no history store");
+        const systemPrompt = this.buildSystemPrompt(intent, thinking, caring, a2aPrompt);
+        const initialMessage: Message = {
+          kind: "message",
+          messageId: uuidv4(),
+          role: "user",
+          parts: [{ kind: "text", text: systemPrompt }],
+          contextId,
+        };
+        DynamicAgentExecutor.historyStore[key].push(initialMessage);
+      }
+
+      // Add incoming message to history
+      const history = DynamicAgentExecutor.historyStore[key];
+      if (incomingMessage) {
+        history.push(incomingMessage);
+      }
+
       try {
-        // Rate limit intent classification to once per minute
-        const now = Date.now();
-        const classificationKey = `${this.agentId}-${contextId}`;
-        const lastClassification = DynamicAgentExecutor.lastIntentClassificationTime[classificationKey];
+        // Convert history to LLM message format
+        const systemPrompt = this.buildSystemPrompt(intent, thinking, caring);
+        const llmMessages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
+          { role: "system", content: systemPrompt }
+        ];
 
-        if (lastClassification && (now - lastClassification) < DynamicAgentExecutor.MIN_INTENT_CLASSIFICATION_INTERVAL_MS) {
-          // Use previous intent (skip LLM call)
-          const previousIntent = await getLastIntent(this.agentId);
-          intent = previousIntent || 'general';
-          const waitTime = Math.ceil((DynamicAgentExecutor.MIN_INTENT_CLASSIFICATION_INTERVAL_MS - (now - lastClassification)) / 1000);
-          console.log(`⏭️ [Intent] Using previous intent: ${intent} (wait ${waitTime}s for re-classification)`);
-        } else {
-          // Classify intent with LLM
-          const existingHistory = DynamicAgentExecutor.historyStore[key] || [];
-          const recentHistory = existingHistory.slice(-6);
-          const messagesForContext = [...recentHistory, incomingMessage];
-          const conversationText = messagesForContext
-            .map(msg => {
+        // Add conversation history (skip the first message which is the system prompt)
+        for (let i = 1; i < history.length; i++) {
+          const msg = history[i];
+          const textPart = msg.parts.find(part => part.kind === "text");
+          const content = textPart?.text || "";
+
+          if (!content) continue; // Skip empty messages
+
+          const role = msg.role === "user" ? "user" : "assistant";
+
+          // Ensure alternating user/assistant pattern
+          const lastMessage = llmMessages[llmMessages.length - 1];
+          if (lastMessage && lastMessage.role === role) {
+            // Same role as previous message, merge content
+            lastMessage.content += "\n\n" + content;
+          } else {
+            llmMessages.push({ role, content });
+          }
+        }
+
+        // Ensure the last message is from user (required by most LLM APIs)
+        const lastMsg = llmMessages[llmMessages.length - 1];
+        if (lastMsg && lastMsg.role !== "user") {
+          // This shouldn't happen in normal flow, but handle it
+          console.warn('⚠️ Last message is not from user, adding placeholder');
+          llmMessages.push({ role: "user", content: "Please continue." });
+        }
+
+        // Call LLM for user-facing responses
+        const responseText = await callLLM(llmMessages);
+
+        const responseMessage: Message = {
+          kind: "message",
+          messageId: uuidv4(),
+          role: "agent",
+          parts: [{ kind: "text", text: responseText }],
+          contextId,
+          // Store intent in metadata (non-standard but works for our use case)
+          ...(intent && { metadata: { intent } } as Partial<Message>)
+        };
+
+        history.push(responseMessage);
+        eventBus.publish(responseMessage);
+
+        // Auto-evolve thinking after meaningful conversations (in background)
+        // Rate limit: only evolve once per minute
+        if (intent && intent !== 'general' && history.length >= 6) {
+          const now = Date.now();
+          const evolutionKey = `${this.agentId}-${intent}`;
+          const lastEvolution = DynamicAgentExecutor.lastEvolutionTime[evolutionKey];
+
+          if (!lastEvolution || (now - lastEvolution) >= DynamicAgentExecutor.MIN_EVOLUTION_INTERVAL_MS) {
+            DynamicAgentExecutor.lastEvolutionTime[evolutionKey] = now;
+
+            const conversationForEvolution = history.slice(-6).map(msg => {
               const textPart = msg.parts.find(part => part.kind === "text");
-              return `${msg.role}: ${textPart && 'text' in textPart ? textPart.text : ""}`;
-            })
-            .join('\n');
+              return {
+                role: msg.role,
+                text: textPart && 'text' in textPart ? textPart.text : ""
+              };
+            });
 
-          const previousIntent = await getLastIntent(this.agentId);
-          intent = await classifyIntent(this.agentId, conversationText, previousIntent);
-
-          // Update last classification time
-          DynamicAgentExecutor.lastIntentClassificationTime[classificationKey] = now;
-          console.log('🎯 [Intent] Classified:', intent, previousIntent ? `(previous: ${previousIntent})` : '');
+            // Run evolution asynchronously (don't await)
+            console.log(`🔄 [Auto-evolution] Triggering for ${this.agentId} - ${intent}`);
+            autoEvolveAfterConversation(this.agentId, intent, conversationForEvolution)
+              .catch(err => console.error('Auto-evolution error:', err));
+          } else {
+            const waitTime = Math.ceil((DynamicAgentExecutor.MIN_EVOLUTION_INTERVAL_MS - (now - lastEvolution)) / 1000);
+            console.log(`⏭️ [Auto-evolution] Skipped for ${this.agentId} - ${intent} (wait ${waitTime}s)`);
+          }
         }
-
-        // Get thinking based on intent
-        thinking = await getThinkingMemory(this.agentId, intent);
-
-        // Get caring based on user (contextId as username)
-        caring = await getUserCaring(this.agentId, contextId);
-
-        console.log('📖 Using memory:', { intent, thinking, username: contextId, caring });
       } catch (error) {
-        console.error('Error getting memory:', error);
+        console.error("Error calling AI model:", error);
+        const errorMessage: Message = {
+          kind: "message",
+          messageId: uuidv4(),
+          role: "agent",
+          parts: [{ kind: "text", text: "Sorry, I encountered an error while processing your request." }],
+          contextId,
+        };
+        history.push(errorMessage);
+        eventBus.publish(errorMessage);
+      } finally {
+        eventBus.finished();
       }
-    }
-
-    // Initialize history with system prompt if needed
-    if (!DynamicAgentExecutor.historyStore[key]) {
-      DynamicAgentExecutor.historyStore[key] = [];
-      console.log("no history store");
-      const systemPrompt = this.buildSystemPrompt(intent, thinking, caring, a2aPrompt);
-      const initialMessage: Message = {
-        kind: "message",
-        messageId: uuidv4(),
-        role: "user",
-        parts: [{ kind: "text", text: systemPrompt }],
-        contextId,
-      };
-      DynamicAgentExecutor.historyStore[key].push(initialMessage);
-    }
-
-    // Add incoming message to history
-    const history = DynamicAgentExecutor.historyStore[key];
-    if (incomingMessage) {
-      history.push(incomingMessage);
-    }
-
-    try {
-      // Convert history to LLM message format
-      const systemPrompt = this.buildSystemPrompt(intent, thinking, caring);
-      const llmMessages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
-        { role: "system", content: systemPrompt }
-      ];
-
-      // Add conversation history (skip the first message which is the system prompt)
-      for (let i = 1; i < history.length; i++) {
-        const msg = history[i];
-        const textPart = msg.parts.find(part => part.kind === "text");
-        const content = textPart?.text || "";
-
-        if (!content) continue; // Skip empty messages
-
-        const role = msg.role === "user" ? "user" : "assistant";
-
-        // Ensure alternating user/assistant pattern
-        const lastMessage = llmMessages[llmMessages.length - 1];
-        if (lastMessage && lastMessage.role === role) {
-          // Same role as previous message, merge content
-          lastMessage.content += "\n\n" + content;
-        } else {
-          llmMessages.push({ role, content });
-        }
-      }
-
-      // Ensure the last message is from user (required by most LLM APIs)
-      const lastMsg = llmMessages[llmMessages.length - 1];
-      if (lastMsg && lastMsg.role !== "user") {
-        // This shouldn't happen in normal flow, but handle it
-        console.warn('⚠️ Last message is not from user, adding placeholder');
-        llmMessages.push({ role: "user", content: "Please continue." });
-      }
-
-      // Call LLM for user-facing responses
-      const responseText = await callLLM(llmMessages);
-
-      const responseMessage: Message = {
-        kind: "message",
-        messageId: uuidv4(),
-        role: "agent",
-        parts: [{ kind: "text", text: responseText }],
-        contextId,
-        // Store intent in metadata (non-standard but works for our use case)
-        ...(intent && { metadata: { intent } } as Partial<Message>)
-      };
-
-      history.push(responseMessage);
-      eventBus.publish(responseMessage);
-
-      // Auto-evolve thinking after meaningful conversations (in background)
-      // Rate limit: only evolve once per minute
-      if (intent && intent !== 'general' && history.length >= 6) {
-        const now = Date.now();
-        const evolutionKey = `${this.agentId}-${intent}`;
-        const lastEvolution = DynamicAgentExecutor.lastEvolutionTime[evolutionKey];
-
-        if (!lastEvolution || (now - lastEvolution) >= DynamicAgentExecutor.MIN_EVOLUTION_INTERVAL_MS) {
-          DynamicAgentExecutor.lastEvolutionTime[evolutionKey] = now;
-
-          const conversationForEvolution = history.slice(-6).map(msg => {
-            const textPart = msg.parts.find(part => part.kind === "text");
-            return {
-              role: msg.role,
-              text: textPart && 'text' in textPart ? textPart.text : ""
-            };
-          });
-
-          // Run evolution asynchronously (don't await)
-          console.log(`🔄 [Auto-evolution] Triggering for ${this.agentId} - ${intent}`);
-          autoEvolveAfterConversation(this.agentId, intent, conversationForEvolution)
-            .catch(err => console.error('Auto-evolution error:', err));
-        } else {
-          const waitTime = Math.ceil((DynamicAgentExecutor.MIN_EVOLUTION_INTERVAL_MS - (now - lastEvolution)) / 1000);
-          console.log(`⏭️ [Auto-evolution] Skipped for ${this.agentId} - ${intent} (wait ${waitTime}s)`);
-        }
-      }
-    } catch (error) {
-      console.error("Error calling AI model:", error);
-      const errorMessage: Message = {
-        kind: "message",
-        messageId: uuidv4(),
-        role: "agent",
-        parts: [{ kind: "text", text: "Sorry, I encountered an error while processing your request." }],
-        contextId,
-      };
-      history.push(errorMessage);
-      eventBus.publish(errorMessage);
-    } finally {
-      eventBus.finished();
-    }
+    });
   }
 
   cancelTask = async (): Promise<void> => {};
@@ -488,63 +494,65 @@ export async function POST(
     // Ensure agent has runtime handlers (recreate if needed)
     agent = await ensureAgentHandlers(agent, agentId);
 
-    try {
-      const body = await request.json();
-      const rpcResponseOrStream = await agent.transportHandler!.handle(body);
+    return await withLLMRouting(request, { agentId }, async () => {
+      try {
+        const body = await request.json();
+        const rpcResponseOrStream = await agent.transportHandler!.handle(body);
 
-      // Check if result is a stream
-      const isAsyncIterable = (obj: unknown): obj is AsyncIterable<JSONRPCSuccessResponse> => {
-        return obj != null && typeof obj === 'object' && Symbol.asyncIterator in obj;
-      };
+        // Check if result is a stream
+        const isAsyncIterable = (obj: unknown): obj is AsyncIterable<JSONRPCSuccessResponse> => {
+          return obj != null && typeof obj === 'object' && Symbol.asyncIterator in obj;
+        };
 
-      if (isAsyncIterable(rpcResponseOrStream)) {
-        const stream = rpcResponseOrStream as AsyncGenerator<JSONRPCSuccessResponse, void, undefined>;
+        if (isAsyncIterable(rpcResponseOrStream)) {
+          const stream = rpcResponseOrStream as AsyncGenerator<JSONRPCSuccessResponse, void, undefined>;
 
-        // Create SSE stream
-        const readable = new ReadableStream({
-          async start(controller) {
-            try {
-              for await (const event of stream) {
-                controller.enqueue(`data: ${JSON.stringify(event)}\n\n`);
+          // Create SSE stream
+          const readable = new ReadableStream({
+            async start(controller) {
+              try {
+                for await (const event of stream) {
+                  controller.enqueue(`data: ${JSON.stringify(event)}\n\n`);
+                }
+              } catch (streamError: unknown) {
+                console.error(`Error during SSE streaming:`, streamError);
+                const a2aError = streamError instanceof A2AError ? streamError : A2AError.internalError((streamError as Error).message || 'Streaming error.');
+                const errorResponse: JSONRPCErrorResponse = {
+                  jsonrpc: '2.0',
+                  id: body?.id || null,
+                  error: a2aError.toJSONRPCError(),
+                };
+                controller.enqueue(`event: error\n`);
+                controller.enqueue(`data: ${JSON.stringify(errorResponse)}\n\n`);
+              } finally {
+                controller.close();
               }
-            } catch (streamError: unknown) {
-              console.error(`Error during SSE streaming:`, streamError);
-              const a2aError = streamError instanceof A2AError ? streamError : A2AError.internalError((streamError as Error).message || 'Streaming error.');
-              const errorResponse: JSONRPCErrorResponse = {
-                jsonrpc: '2.0',
-                id: body?.id || null,
-                error: a2aError.toJSONRPCError(),
-              };
-              controller.enqueue(`event: error\n`);
-              controller.enqueue(`data: ${JSON.stringify(errorResponse)}\n\n`);
-            } finally {
-              controller.close();
             }
-          }
-        });
+          });
 
-        return new Response(readable, {
-          headers: {
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            'Connection': 'keep-alive',
-          }
-        });
-      } else {
-        // Handle single JSON-RPC response
-        const rpcResponse = rpcResponseOrStream as JSONRPCResponse;
-        return NextResponse.json(rpcResponse);
+          return new Response(readable, {
+            headers: {
+              'Content-Type': 'text/event-stream',
+              'Cache-Control': 'no-cache',
+              'Connection': 'keep-alive',
+            }
+          });
+        } else {
+          // Handle single JSON-RPC response
+          const rpcResponse = rpcResponseOrStream as JSONRPCResponse;
+          return NextResponse.json(rpcResponse);
+        }
+      } catch (error: unknown) {
+        console.error("Error in POST handler:", error);
+        const a2aError = error instanceof A2AError ? error : A2AError.internalError('General processing error.');
+        const errorResponse: JSONRPCErrorResponse = {
+          jsonrpc: '2.0',
+          id: null,
+          error: a2aError.toJSONRPCError(),
+        };
+        return NextResponse.json(errorResponse, { status: 500 });
       }
-    } catch (error: unknown) {
-      console.error("Error in POST handler:", error);
-      const a2aError = error instanceof A2AError ? error : A2AError.internalError('General processing error.');
-      const errorResponse: JSONRPCErrorResponse = {
-        jsonrpc: '2.0',
-        id: null,
-        error: a2aError.toJSONRPCError(),
-      };
-      return NextResponse.json(errorResponse, { status: 500 });
-    }
+    });
   }
 
   return NextResponse.json({ error: 'Not Found' }, { status: 404 });
