@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAgent } from '@/lib/agentStore';
+import { getCorsHeaders, corsOptions } from '@/lib/utils/cors';
+
+export async function OPTIONS(request: NextRequest) {
+  return corsOptions(request);
+}
 
 export async function GET(
   request: NextRequest,
@@ -10,12 +15,13 @@ export async function GET(
   const { searchParams } = new URL(request.url);
   const intent = searchParams.get('intent');
   const username = searchParams.get('username');
+  const corsHeaders = getCorsHeaders(request);
 
   try {
     const agent = await getAgent(agentId);
 
     if (!agent) {
-      return NextResponse.json({ error: "Agent not found" }, { status: 404 });
+      return NextResponse.json({ error: "Agent not found" }, { status: 404, headers: corsHeaders });
     }
 
     // Get intent-based thinking
@@ -59,9 +65,9 @@ export async function GET(
         intent,
         factCount: text === '(empty)' ? 0 : text.split('\n').filter(f => f.trim()).length
       })),
-    });
+    }, { headers: corsHeaders });
   } catch (error) {
     console.error("Error fetching agent status:", error);
-    return NextResponse.json({ error: "Failed to fetch agent status" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch agent status" }, { status: 500, headers: corsHeaders });
   }
 }

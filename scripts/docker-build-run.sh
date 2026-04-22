@@ -27,6 +27,7 @@ sudo docker build \
   --build-arg NEXT_PUBLIC_SITE_URL="${NEXT_PUBLIC_SITE_URL}" \
   --build-arg NEXT_PUBLIC_API_BASE_URL="${NEXT_PUBLIC_API_BASE_URL}" \
   --build-arg NEXT_PUBLIC_SENTRY_DSN="${NEXT_PUBLIC_SENTRY_DSN}" \
+  --build-arg NEXT_PUBLIC_SKIP_HOLDER_CHECK="${NEXT_PUBLIC_SKIP_HOLDER_CHECK}" \
   -t ${image_name} .
 
 echo "Removing existing container '${container_name}' if exists..."
