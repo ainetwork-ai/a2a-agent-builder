@@ -62,7 +62,8 @@ async function saveIntentPattern(
 export async function classifyIntent(
   agentId: string,
   conversationText: string,
-  previousIntent?: string
+  previousIntent?: string,
+  existingIntents?: string[]
 ): Promise<string> {
   // Step 1: Try pattern matching first
   const matchedIntent = await matchIntentFromPatterns(agentId, conversationText);
@@ -77,6 +78,10 @@ export async function classifyIntent(
     ? `\nPrevious intent: ${previousIntent}`
     : '';
 
+  const existingIntentsContext = existingIntents && existingIntents.length > 0
+    ? `\nExisting intents: [${existingIntents.join(', ')}]\nPrefer using an existing intent if the topic is related. Only create a new one if clearly different.`
+    : '';
+
   const systemPrompt = `You are an intent classification expert. Identify the MOST SPECIFIC named entity or concept in conversations and provide keywords to identify them in the future.
 
 Be as specific as possible:
@@ -89,7 +94,7 @@ The user may write in any language (Korean or English). Classify the intent base
 Match keywords semantically across languages (e.g., "블록체인" matches "blockchain" intent).
 
 Format: 1-2 words, lowercase, underscore for spaces.
-Keep the intent same as the previous one if the conversation flow hasn't changed.${previousIntentContext}
+Keep the intent same as the previous one if the conversation flow hasn't changed.${previousIntentContext}${existingIntentsContext}
 
 Respond in this exact format:
 INTENT: [the most specific entity/concept]
