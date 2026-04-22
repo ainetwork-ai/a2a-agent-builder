@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { evolveThinking, getThinkingSummary } from "@/lib/thinkingEvolution";
+import { withLLMRouting } from "@/lib/requestContext";
 
 /**
  * POST /api/agents/[agentId]/evolve-thinking
@@ -26,29 +27,31 @@ export async function POST(
 
     console.log(`🧬 [API] Evolving thinking for agent "${agentId}", intent: "${intent}"`);
 
-    const result = await evolveThinking({
-      agentId,
-      intent,
-      conversationContext,
-      cycles: cycles || 2
-    });
+    return await withLLMRouting(request, { agentId }, async () => {
+      const result = await evolveThinking({
+        agentId,
+        intent,
+        conversationContext,
+        cycles: cycles || 2
+      });
 
-    if (!result.success) {
-      return NextResponse.json(
-        { error: "Failed to evolve thinking" },
-        { status: 500 }
-      );
-    }
+      if (!result.success) {
+        return NextResponse.json(
+          { error: "Failed to evolve thinking" },
+          { status: 500 }
+        );
+      }
 
-    return NextResponse.json({
-      success: true,
-      intent,
-      factsAdded: result.factsAdded,
-      previousFactCount: result.previousThinking === '(empty)'
-        ? 0
-        : result.previousThinking.split('\n').filter(f => f.trim()).length,
-      newFactCount: result.newThinking.split('\n').filter(f => f.trim()).length,
-      newThinking: result.newThinking
+      return NextResponse.json({
+        success: true,
+        intent,
+        factsAdded: result.factsAdded,
+        previousFactCount: result.previousThinking === '(empty)'
+          ? 0
+          : result.previousThinking.split('\n').filter(f => f.trim()).length,
+        newFactCount: result.newThinking.split('\n').filter(f => f.trim()).length,
+        newThinking: result.newThinking
+      });
     });
 
   } catch (error) {
