@@ -34,9 +34,11 @@ export class ThinkingMemory {
   private searchPaths: Map<string, ReasoningPath>;
   private sharedVerifiedFacts: Set<string>;
   private readonly maxPaths: number;
+  private readonly maxFacts: number;
 
-  constructor(initialProposition?: string, maxPaths: number = 3) {
+  constructor(initialProposition?: string, maxPaths: number = 3, maxFacts: number = 15) {
     this.maxPaths = maxPaths;
+    this.maxFacts = maxFacts;
     this.searchPaths = new Map();
     this.sharedVerifiedFacts = new Set();
 
@@ -129,6 +131,22 @@ export class ThinkingMemory {
     return pathId;
   }
 
+  replaceFacts(facts: string[]): void {
+    this.sharedVerifiedFacts.clear();
+    facts.forEach(fact => this.sharedVerifiedFacts.add(fact));
+    for (const path of this.searchPaths.values()) {
+      path.propositions = [...facts];
+    }
+  }
+
+  isOverLimit(): boolean {
+    return this.sharedVerifiedFacts.size > this.maxFacts;
+  }
+
+  getFacts(): string[] {
+    return Array.from(this.sharedVerifiedFacts);
+  }
+
   /**
    * Export all verified facts as a single string
    */
@@ -139,8 +157,8 @@ export class ThinkingMemory {
   /**
    * Import facts from a string (used for persistence)
    */
-  static fromFacts(factsString: string): ThinkingMemory {
-    const memory = new ThinkingMemory();
+  static fromFacts(factsString: string, maxFacts: number = 15): ThinkingMemory {
+    const memory = new ThinkingMemory(undefined, 3, maxFacts);
     if (factsString && factsString !== '(empty)') {
       const facts = factsString.split('\n').filter(f => f.trim());
       facts.forEach(fact => memory.addVerifiedFact(fact));
@@ -193,6 +211,7 @@ Generate 2-3 new propositions that:
 3. Use first-order logic style natural language
 4. Are specific and actionable (not vague generalizations)
 5. Could be examples, deeper insights, or logical consequences
+- Only extract knowledge relevant to "${intent}". Ignore unrelated parts of the conversation.
 
 Return ONLY a JSON array of strings, no other text:
 ["proposition 1", "proposition 2", "proposition 3"]`;
@@ -289,13 +308,21 @@ export class LogicalVerifier {
    */
   async verify(
     memoryContext: ReasoningContext,
-    proposition: string
+    proposition: string,
+    groundTruth?: string,
+    conversationContext?: string
   ): Promise<{ valid: boolean; confidence: number; reason?: string }> {
     console.log(`🛡️ [LogicalVerifier] Verifying: "${proposition}"`);
 
-    const prompt = `You are a strict logical consistency checker. Verify if the candidate proposition is logically consistent with established facts.
+    const prompt = `You are a strict logical consistency checker. Verify if the candidate proposition is logically consistent with all available evidence.
 
-# Established facts:
+# Agent's core knowledge (ground truth):
+${groundTruth || '(none)'}
+
+# Source conversation:
+${conversationContext || '(none)'}
+
+# Established facts from previous reasoning:
 ${memoryContext.sharedFacts.length > 0 ? memoryContext.sharedFacts.join('\n') : '(No facts yet)'}
 
 # Candidate proposition:
@@ -303,9 +330,10 @@ ${memoryContext.sharedFacts.length > 0 ? memoryContext.sharedFacts.join('\n') : 
 
 # Your task:
 Determine if this proposition:
-1. Is consistent with established facts (no contradictions)
-2. Adds meaningful information (not redundant)
-3. Is specific and verifiable (not too vague)
+1. Is consistent with the agent's core knowledge (no contradictions with ground truth)
+2. Is grounded in the source conversation (not hallucinated)
+3. Is consistent with established facts (no contradictions)
+4. Adds meaningful information (not redundant)
 
 Respond in this EXACT format:
 VERDICT: [VALID/INVALID/UNCERTAIN]
@@ -357,17 +385,63 @@ export class LogicalReasoningEngine {
   private memory: ThinkingMemory;
   private prompt: ReasoningPrompt;
   private verifier: LogicalVerifier;
+  private modelName: string;
+  private groundTruth?: string;
 
   constructor(
     modelName: string,
     initialKnowledge?: string,
-    domain?: string
+    domain?: string,
+    maxFacts: number = 15,
+    groundTruth?: string
   ) {
+    this.modelName = modelName;
+    this.groundTruth = groundTruth;
     this.memory = initialKnowledge
-      ? ThinkingMemory.fromFacts(initialKnowledge)
-      : new ThinkingMemory();
+      ? ThinkingMemory.fromFacts(initialKnowledge, maxFacts)
+      : new ThinkingMemory(undefined, 3, maxFacts);
     this.prompt = new ReasoningPrompt(modelName, domain);
     this.verifier = new LogicalVerifier(modelName);
+  }
+
+  private async consolidateFacts(intent: string): Promise<void> {
+    const facts = this.memory.getFacts();
+    const maxFacts = 15;
+
+    console.log(`📦 [ReasoningEngine] Consolidating ${facts.length} facts for "${intent}" (limit: ${maxFacts})`);
+
+    const prompt = `You have ${facts.length} facts about "${intent}". Consolidate them into ${maxFacts} or fewer facts.
+
+Rules:
+- Merge similar or overlapping facts into one
+- Remove outdated facts that are superseded by newer ones
+- Keep the most actionable and specific facts
+- Preserve the most important insights
+- Do NOT add new information that isn't in the original facts
+
+Current facts:
+${facts.map((f, i) => `${i + 1}. ${f}`).join('\n')}
+
+Return ONLY a JSON array of consolidated facts, no other text:
+["fact 1", "fact 2", ...]`;
+
+    try {
+      const text = await callLLM([
+        { role: "system", content: "You consolidate knowledge into concise, non-redundant facts." },
+        { role: "user", content: prompt }
+      ]);
+
+      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        const consolidated = JSON.parse(jsonMatch[0]) as string[];
+        this.memory.replaceFacts(consolidated);
+        console.log(`✅ [ReasoningEngine] Consolidated ${facts.length} → ${consolidated.length} facts`);
+      } else {
+        console.warn('⚠️ [ReasoningEngine] Consolidation parse failed, keeping original facts');
+      }
+    } catch (error) {
+      console.error('❌ [ReasoningEngine] Consolidation error, keeping original facts:', error);
+    }
   }
 
   /**
@@ -404,7 +478,7 @@ export class LogicalReasoningEngine {
 
     // Verify and add valid propositions
     for (const candidate of candidates) {
-      const verification = await this.verifier.verify(context, candidate);
+      const verification = await this.verifier.verify(context, candidate, this.groundTruth, conversationContext);
 
       if (verification.valid) {
         this.memory.addVerifiedFact(candidate, verification.confidence);
@@ -436,6 +510,10 @@ export class LogicalReasoningEngine {
         console.log("⏹️ [ReasoningEngine] No new facts added, stopping early");
         break;
       }
+    }
+
+    if (this.memory.isOverLimit()) {
+      await this.consolidateFacts(intent);
     }
 
     return this.memory.exportFacts();

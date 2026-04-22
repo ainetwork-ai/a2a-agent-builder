@@ -12,7 +12,7 @@ import {
 } from "@a2a-js/sdk/server";
 
 import { getAgent, setAgent, hasAgent, getAllAgents, deleteAgent, type StoredAgent } from '@/lib/agentStore';
-import { classifyIntent, getThinkingMemory, getUserCaring, getLastIntent } from '@/lib/intentClassifier';
+import { classifyIntent } from '@/lib/intentClassifier';
 import { getBaseUrl } from '@/lib/url';
 import { autoEvolveAfterConversation } from '@/lib/thinkingEvolution';
 import { callLLM } from '@/lib/llmManager';
@@ -110,19 +110,31 @@ ${a2a}
 
       if (incomingMessage) {
         try {
+          const agentData = await getAgent(this.agentId);
+          const thinkingMemories = agentData?.thinkingMemories || {};
+          const caringMemories = agentData?.caringMemories || {};
+          const intentPatterns = agentData?.intentPatterns || {};
+
+          const existingIntents = [...new Set([
+            ...Object.keys(thinkingMemories),
+            ...Object.keys(intentPatterns)
+          ])];
+
+          const thinkingIntents = Object.keys(thinkingMemories);
+          const previousIntent = thinkingIntents.length > 0
+            ? thinkingIntents[thinkingIntents.length - 1]
+            : undefined;
+
           // Rate limit intent classification to once per minute
           const now = Date.now();
           const classificationKey = `${this.agentId}-${contextId}`;
           const lastClassification = DynamicAgentExecutor.lastIntentClassificationTime[classificationKey];
 
           if (lastClassification && (now - lastClassification) < DynamicAgentExecutor.MIN_INTENT_CLASSIFICATION_INTERVAL_MS) {
-            // Use previous intent (skip LLM call)
-            const previousIntent = await getLastIntent(this.agentId);
             intent = previousIntent || 'general';
             const waitTime = Math.ceil((DynamicAgentExecutor.MIN_INTENT_CLASSIFICATION_INTERVAL_MS - (now - lastClassification)) / 1000);
             console.log(`⏭️ [Intent] Using previous intent: ${intent} (wait ${waitTime}s for re-classification)`);
           } else {
-            // Classify intent with LLM
             const existingHistory = DynamicAgentExecutor.historyStore[key] || [];
             const recentHistory = existingHistory.slice(-6);
             const messagesForContext = [...recentHistory, incomingMessage];
@@ -133,19 +145,14 @@ ${a2a}
               })
               .join('\n');
 
-            const previousIntent = await getLastIntent(this.agentId);
-            intent = await classifyIntent(this.agentId, conversationText, previousIntent);
+            intent = await classifyIntent(this.agentId, conversationText, previousIntent, existingIntents);
 
-            // Update last classification time
             DynamicAgentExecutor.lastIntentClassificationTime[classificationKey] = now;
             console.log('🎯 [Intent] Classified:', intent, previousIntent ? `(previous: ${previousIntent})` : '');
           }
 
-          // Get thinking based on intent
-          thinking = await getThinkingMemory(this.agentId, intent);
-
-          // Get caring based on user (contextId as username)
-          caring = await getUserCaring(this.agentId, contextId);
+          thinking = thinkingMemories[intent] || '(empty)';
+          caring = caringMemories[contextId] || '(empty)';
 
           console.log('📖 Using memory:', { intent, thinking, username: contextId, caring });
         } catch (error) {
@@ -226,8 +233,11 @@ ${a2a}
         eventBus.publish(responseMessage);
 
         // Auto-evolve thinking after meaningful conversations (in background)
-        // Rate limit: only evolve once per minute
-        if (intent && intent !== 'general' && history.length >= 6) {
+        // Trigger when agent has responded 3+ times on this intent
+        const intentResponseCount = history.filter(msg =>
+          msg.role === 'agent' && (msg as unknown as { metadata?: { intent?: string } }).metadata?.intent === intent
+        ).length;
+        if (intent && intent !== 'general' && intentResponseCount >= 3) {
           const now = Date.now();
           const evolutionKey = `${this.agentId}-${intent}`;
           const lastEvolution = DynamicAgentExecutor.lastEvolutionTime[evolutionKey];

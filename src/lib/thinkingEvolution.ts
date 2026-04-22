@@ -1,5 +1,6 @@
 import { LogicalReasoningEngine } from "./logicalReasoning";
 import { getAgent, setAgent } from "./agentStore";
+import { getIntents } from "./intentStore";
 import { callLLM } from "./llmManager";
 
 /**
@@ -51,11 +52,20 @@ export async function evolveThinking(config: ThinkingEvolutionConfig): Promise<{
     console.log(`📖 Previous thinking (${previousThinking.length} chars):`,
       previousThinking.substring(0, 100) + (previousThinking.length > 100 ? '...' : ''));
 
+    // Build ground truth from base prompt + form knowledge
+    const intents = await getIntents(agentId);
+    const knowledgeContext = intents.map(i => `[${i.name}] ${i.prompt}`).join('\n');
+    const groundTruth = knowledgeContext
+      ? `${agent.prompt}\n\n${knowledgeContext}`
+      : agent.prompt;
+
     // Initialize reasoning engine with current knowledge
     const reasoningEngine = new LogicalReasoningEngine(
       modelName,
       previousThinking !== '(empty)' ? previousThinking : undefined,
-      agent.card.description // Use agent description as domain context
+      agent.card.description,
+      15,
+      groundTruth
     );
 
     // Run reasoning cycles
