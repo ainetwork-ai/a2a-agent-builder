@@ -23,3 +23,10 @@ export function withLLMRouting<T>(
   const threadId = request.headers.get(HEADER_THREAD_ID) ?? undefined;
   return llmRoutingStorage.run({ threadId, agentId: ctx.agentId }, fn);
 }
+
+// Drop all routing affinity for short/sub-task LLM calls (intent classification,
+// logical verifier) where prefix cache gain is negligible. Lets nginx fall back
+// to $request_id for natural load balancing across vLLM instances.
+export function withoutLLMRouting<T>(fn: () => Promise<T>): Promise<T> {
+  return llmRoutingStorage.run({}, fn);
+}

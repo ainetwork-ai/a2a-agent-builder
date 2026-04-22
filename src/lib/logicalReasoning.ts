@@ -1,4 +1,5 @@
 import { callLLM } from "./llmManager";
+import { withoutLLMRouting } from "./requestContext";
 
 /**
  * Logical Reasoning Engine
@@ -321,10 +322,10 @@ CONFIDENCE: 0.8
 REASON: Contradicts established fact about X`;
 
     try {
-      const text = await callLLM([
+      const text = await withoutLLMRouting(() => callLLM([
         { role: "system", content: "You are a strict logical consistency checker." },
         { role: "user", content: prompt }
-      ]);
+      ]));
 
       // Parse verification result
       const verdictMatch = text.match(/VERDICT:\s*(VALID|INVALID|UNCERTAIN)/i);

@@ -1,6 +1,7 @@
 import { getAgent, setAgent } from './agentStore';
 import type { IntentMemory } from './agentStore';
 import { callLLM } from './llmManager';
+import { withoutLLMRouting } from './requestContext';
 
 // Try to match intent from stored patterns first
 async function matchIntentFromPatterns(
@@ -101,10 +102,10 @@ KEYWORDS: 이순신, yi_sun_sin, admiral, 충무공, 장군, turtle ship`;
   const userPrompt = `Conversation:
 ${conversationText}`;
 
-  const response = await callLLM([
+  const response = await withoutLLMRouting(() => callLLM([
     { role: "system", content: systemPrompt },
     { role: "user", content: userPrompt }
-  ]);
+  ]));
 
   // Parse response
   const intentMatch = response.match(/INTENT:\s*(.+?)(?=\n|$)/);
