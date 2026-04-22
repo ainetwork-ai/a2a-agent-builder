@@ -234,9 +234,10 @@ ${a2a}
 
         // Auto-evolve thinking after meaningful conversations (in background)
         // Trigger when agent has responded 3+ times on this intent
-        const intentResponseCount = history.filter(msg =>
-          msg.role === 'agent' && (msg as unknown as { metadata?: { intent?: string } }).metadata?.intent === intent
-        ).length;
+        const intentResponseCount = history.filter(msg => {
+          const metadata = msg.metadata as { intent?: string } | undefined;
+          return msg.role === 'agent' && metadata?.intent === intent;
+        }).length;
         if (intent && intent !== 'general' && intentResponseCount >= 3) {
           const now = Date.now();
           const evolutionKey = `${this.agentId}-${intent}`;

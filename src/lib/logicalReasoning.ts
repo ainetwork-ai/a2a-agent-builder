@@ -1,6 +1,8 @@
 import { callLLM } from "./llmManager";
 import { withoutLLMRouting } from "./requestContext";
 
+export const DEFAULT_MAX_FACTS = 15;
+
 /**
  * Logical Reasoning Engine
  *
@@ -36,7 +38,7 @@ export class ThinkingMemory {
   private readonly maxPaths: number;
   private readonly maxFacts: number;
 
-  constructor(initialProposition?: string, maxPaths: number = 3, maxFacts: number = 15) {
+  constructor(initialProposition?: string, maxPaths: number = 3, maxFacts: number = DEFAULT_MAX_FACTS) {
     this.maxPaths = maxPaths;
     this.maxFacts = maxFacts;
     this.searchPaths = new Map();
@@ -157,7 +159,7 @@ export class ThinkingMemory {
   /**
    * Import facts from a string (used for persistence)
    */
-  static fromFacts(factsString: string, maxFacts: number = 15): ThinkingMemory {
+  static fromFacts(factsString: string, maxFacts: number = DEFAULT_MAX_FACTS): ThinkingMemory {
     const memory = new ThinkingMemory(undefined, 3, maxFacts);
     if (factsString && factsString !== '(empty)') {
       const facts = factsString.split('\n').filter(f => f.trim());
@@ -385,18 +387,18 @@ export class LogicalReasoningEngine {
   private memory: ThinkingMemory;
   private prompt: ReasoningPrompt;
   private verifier: LogicalVerifier;
-  private modelName: string;
   private groundTruth?: string;
+  private maxFacts: number;
 
   constructor(
     modelName: string,
     initialKnowledge?: string,
     domain?: string,
-    maxFacts: number = 15,
+    maxFacts: number = DEFAULT_MAX_FACTS,
     groundTruth?: string
   ) {
-    this.modelName = modelName;
     this.groundTruth = groundTruth;
+    this.maxFacts = maxFacts;
     this.memory = initialKnowledge
       ? ThinkingMemory.fromFacts(initialKnowledge, maxFacts)
       : new ThinkingMemory(undefined, 3, maxFacts);
@@ -406,7 +408,7 @@ export class LogicalReasoningEngine {
 
   private async consolidateFacts(intent: string): Promise<void> {
     const facts = this.memory.getFacts();
-    const maxFacts = 15;
+    const maxFacts = this.maxFacts;
 
     console.log(`📦 [ReasoningEngine] Consolidating ${facts.length} facts for "${intent}" (limit: ${maxFacts})`);
 
@@ -476,15 +478,19 @@ Return ONLY a JSON array of consolidated facts, no other text:
 
     let factsAdded = 0;
 
-    // Verify and add valid propositions
-    for (const candidate of candidates) {
-      const verification = await this.verifier.verify(context, candidate, this.groundTruth, conversationContext);
+    const verifications = await Promise.all(
+      candidates.map(candidate =>
+        this.verifier.verify(context, candidate, this.groundTruth, conversationContext)
+          .then(result => ({ candidate, result }))
+      )
+    );
 
-      if (verification.valid) {
-        this.memory.addVerifiedFact(candidate, verification.confidence);
+    for (const { candidate, result } of verifications) {
+      if (result.valid) {
+        this.memory.addVerifiedFact(candidate, result.confidence);
         factsAdded++;
       } else {
-        console.log(`❌ [ReasoningEngine] Rejected: "${candidate}" - ${verification.reason}`);
+        console.log(`❌ [ReasoningEngine] Rejected: "${candidate}" - ${result.reason}`);
       }
     }
 
