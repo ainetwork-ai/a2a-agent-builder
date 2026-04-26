@@ -2,12 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAllAgents } from '@/lib/agentStore';
 import { getIntents } from '@/lib/intentStore';
 import { getCorsHeaders, corsOptions } from '@/lib/utils/cors';
+import { verifyAdminSecret, countFacts } from '@/lib/adminAuth';
 
 export async function OPTIONS(request: NextRequest) {
   return corsOptions(request);
 }
 
 export async function GET(request: NextRequest) {
+  const authError = verifyAdminSecret(request);
+  if (authError) return authError;
+
   const { searchParams } = new URL(request.url);
   const walletAddress = searchParams.get('address');
 
@@ -20,36 +24,44 @@ export async function GET(request: NextRequest) {
       )
     : allAgents;
 
-  // Convert StoredAgent to the format expected by the caller
-  // Load each agent's intents from its own redis key
   const agents = await Promise.all(
     filteredAgents.map(async (agent) => {
       const agentId = agent.card.url.split('/').pop() || '';
       const intents = await getIntents(agentId);
 
+      const thinkingMemories = agent.thinkingMemories || {};
+      const caringMemories = agent.caringMemories || {};
+      const intentPatterns = agent.intentPatterns || {};
+
       return {
         id: agentId,
-        name: agent.card.name,
-        description: agent.card.description,
-        url: agent.card.url,
+        card: agent.card,
+        prompt: agent.prompt,
         modelProvider: agent.modelProvider,
         modelName: agent.modelName,
-        prompt: agent.prompt,
-        skills: agent.card.skills,
-        intents: intents.length > 0 ? intents : undefined,
-        deployed: true,
         creator: agent.creator,
+        intents: intents.length > 0 ? intents : undefined,
+        memorySummary: {
+          thinkingIntents: Object.entries(thinkingMemories).map(([intent, text]) => ({
+            intent,
+            factCount: countFacts(text),
+          })),
+          caringUsers: Object.entries(caringMemories).map(([username, text]) => ({
+            username,
+            factCount: countFacts(text),
+          })),
+          intentPatternCount: Object.keys(intentPatterns).length,
+        },
       };
     })
   );
 
   console.log(
-    '📋 Listing agents:',
+    '📋 [admin] Listing agents:',
     agents.length,
     walletAddress ? `(by ${walletAddress})` : '(all)'
   );
 
   const corsHeaders = getCorsHeaders(request);
-
   return NextResponse.json({ agents }, { headers: corsHeaders });
 }

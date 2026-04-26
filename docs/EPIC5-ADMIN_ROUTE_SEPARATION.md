@@ -95,9 +95,9 @@ if (isAdmin) {
 ### 태스크
 
 #### Admin GET 라우트 생성
-- [ ] `src/app/api/admin/agents/route.ts` 파일을 생성한다.
-- [ ] `OPTIONS` 핸들러를 추가한다 (`corsOptions(request)` 호출).
-- [ ] `GET` 핸들러를 구현한다:
+- [x] `src/app/api/admin/agents/route.ts` 파일을 생성한다.
+- [x] `OPTIONS` 핸들러를 추가한다 (`corsOptions(request)` 호출).
+- [x] `GET` 핸들러를 구현한다:
   1. `verifyAdminSecret(request)`를 호출하여 인증 실패 시 401 응답을 즉시 반환한다.
   2. `searchParams.get('address')`로 선택적 지갑 필터를 읽는다.
   3. `getAllAgents()`로 전체 에이전트를 조회하고, `address`가 있으면 `creator` 기준으로 필터링한다 (기존 route.ts:35-39 로직 동일).
@@ -111,15 +111,15 @@ if (isAdmin) {
   5. `NextResponse.json({ agents }, { headers: corsHeaders })`로 반환한다.
 
 #### 기존 list 라우트 정리
-- [ ] `list/route.ts`에서 다음을 제거한다:
+- [x] `list/route.ts`에서 다음을 제거한다:
   - `countFacts` 함수 (route.ts:10-13)
   - `X-Admin-Secret` 헤더 읽기 및 검증 로직 (route.ts:19-30)
   - `isAdmin` 변수 및 admin 분기 (route.ts:48-73)
   - 로그의 `isAdmin ? '(admin)' : ''` 부분 (route.ts:97)
-- [ ] 일반 모드 응답 로직만 남긴다 (route.ts:77-89의 return 블록).
+- [x] 일반 모드 응답 로직만 남긴다 (route.ts:77-89의 return 블록).
 
 #### CORS 업데이트
-- [ ] `src/lib/utils/cors.ts`의 `getCorsHeaders` 함수에서 `Access-Control-Allow-Methods`에 `POST`를 추가한다: `'GET, POST, OPTIONS'`.
+- [x] `src/lib/utils/cors.ts`의 `getCorsHeaders` 함수에서 `Access-Control-Allow-Methods`에 `POST`를 추가한다: `'GET, POST, OPTIONS'`.
 
 ### 주의사항
 - 일반 모드의 응답 형태는 한 글자도 바꾸지 않는다. 프론트엔드(`DeployedAgents.tsx`)가 이 응답에 의존한다.
