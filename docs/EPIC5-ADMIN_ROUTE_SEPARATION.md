@@ -155,9 +155,9 @@ Admin은 creator가 아니어도 prompt를 수정할 수 있어야 한다. 기�
 ### 태스크
 
 #### Admin POST 라우트 생성
-- [ ] `src/app/api/admin/agents/[agentId]/route.ts` 파일을 생성한다.
-- [ ] `OPTIONS` 핸들러를 추가한다.
-- [ ] `POST` 핸들러를 구현한다. 시그니처: `POST(request: NextRequest, { params }: { params: Promise<{ agentId: string }> })`.
+- [x] `src/app/api/admin/agents/[agentId]/route.ts` 파일을 생성한다.
+- [x] `OPTIONS` 핸들러를 추가한다.
+- [x] `POST` 핸들러를 구현한다. 시그니처: `POST(request: NextRequest, { params }: { params: Promise<{ agentId: string }> })`.
   1. `verifyAdminSecret(request)`를 호출하여 인증 실패 시 401을 반환한다.
   2. `params`에서 `agentId`를 추출한다.
   3. `request.json()`으로 body를 파싱하고 `prompt` 필드를 추출한다.
@@ -166,7 +166,7 @@ Admin은 creator가 아니어도 prompt를 수정할 수 있어야 한다. 기�
   6. `setAgent(agentId, { ...agent, prompt })`로 prompt만 갱신한다.
   7. 성공 시 `{ success: true, agentId, prompt }`를 반환한다.
   8. 모든 응답에 CORS 헤더를 포함한다.
-- [ ] try-catch로 감싸고 에러 시 `{ error: 'Failed to update agent prompt' }`, 500을 반환한다.
+- [x] try-catch로 감싸고 에러 시 `{ error: 'Failed to update agent prompt' }`, 500을 반환한다.
 
 ### 주의사항
 - Body에서 `prompt` 외의 필드는 무시한다. 향후 수정 가능 필드 확장 시 이 라우트에 추가할 수 있다.
