@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto';
+import { generateNonce } from 'siwe';
 import { redis, REDIS_KEYS } from '@/lib/redis';
 import { getCorsHeaders, corsOptions, corsErrorResponse } from '@/lib/utils/cors';
 
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
   }
 
   const normalizedAddress = address.toLowerCase();
-  const nonce = crypto.randomUUID();
+  const nonce = generateNonce();
 
   await redis.setex(REDIS_KEYS.ADMIN_NONCE(normalizedAddress), NONCE_TTL_SECONDS, nonce);
 
