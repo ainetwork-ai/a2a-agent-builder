@@ -230,29 +230,29 @@ EPIC5에서 갱신된 API 명세가 `X-Admin-Secret` 기반이다. JWT 전환 �
 ### 태스크
 
 #### 인증 흐름 문서 추가
-- [ ] 문서 상단에 "인증" 섹션을 추가한다. SIWE + JWT 흐름을 단계별로 설명한다:
+- [x] 문서 상단에 "인증" 섹션을 추가한다. SIWE + JWT 흐름을 단계별로 설명한다:
   1. `GET /api/admin/auth/nonce?address=` → nonce 발급
   2. 클라이언트: SIWE 메시지 생성 + 지갑 서명
   3. `POST /api/admin/auth/verify` → JWT 발급
   4. 이후 요청: `Authorization: Bearer <token>`
-- [ ] 환경변수 요구사항을 정리한다: `ADMIN_WALLETS`, `JWT_SECRET`, `ADMIN_DASHBOARD_URL`.
+- [x] 환경변수 요구사항을 정리한다: `ADMIN_WALLETS`, `JWT_SECRET`, `ADMIN_DASHBOARD_URL`.
 
 #### 새 엔드포인트 명세 추가
-- [ ] `GET /api/admin/auth/nonce` 엔드포인트 명세를 추가한다:
+- [x] `GET /api/admin/auth/nonce` 엔드포인트 명세를 추가한다:
   - Query: `address` (필수)
   - 200: `{ nonce, expiresAt }`
   - 400: address 누락
   - curl 예시
-- [ ] `POST /api/admin/auth/verify` 엔드포인트 명세를 추가한다:
+- [x] `POST /api/admin/auth/verify` 엔드포인트 명세를 추가한다:
   - Body: `{ message, signature }`
   - 200: `{ token, expiresAt }`
   - 400: body 누락, 401: 서명/nonce 불일치, 403: 허용되지 않은 지갑
   - curl 예시
 
 #### 기존 명세 갱신
-- [ ] 기존 엔드포인트(에이전트 목록 GET, 프롬프트 수정 POST)의 인증 설명에서 `X-Admin-Secret` 헤더를 `Authorization: Bearer <token>` 헤더로 교체한다.
-- [ ] curl 예시에서 `-H "X-Admin-Secret: ..."` 를 `-H "Authorization: Bearer ..."` 로 변경한다.
-- [ ] 권장 사용 흐름을 업데이트한다: 로그인 → 토큰 발급 → 목록 조회 → 상세 조회 → 프롬프트 수정.
+- [x] 기존 엔드포인트(에이전트 목록 GET, 프롬프트 수정 POST)의 인증 설명에서 `X-Admin-Secret` 헤더를 `Authorization: Bearer <token>` 헤더로 교체한다.
+- [x] curl 예시에서 `-H "X-Admin-Secret: ..."` 를 `-H "Authorization: Bearer ..."` 로 변경한다.
+- [x] 권장 사용 흐름을 업데이트한다: 로그인 → 토큰 발급 → 목록 조회 → 상세 조회 → 프롬프트 수정.
 
 ### 주의사항
 - 상세 메모리 조회(`GET /api/agents/{agentId}/status`) 명세는 그대로 유지한다 (인증 없음, 경로 변경 없음).
@@ -292,21 +292,21 @@ EPIC5에서 갱신된 API 명세가 `X-Admin-Secret` 기반이다. JWT 전환 �
 ---
 
 ## 완료 조건
-- [ ] `GET /api/admin/auth/nonce?address=0x...` 호출 시 nonce + expiresAt가 반환된다
-- [ ] nonce가 Redis에 5분 TTL로 저장된다
-- [ ] `POST /api/admin/auth/verify` + 유효한 SIWE 서명 + 올바른 nonce → JWT가 발급된다
-- [ ] **배포된 Coinbase Smart Wallet의 EIP-1271 서명이 검증 통과한다** (Base mainnet RPC 호출 동반)
-- [ ] **미배포 (counterfactual) Coinbase Smart Wallet의 ERC-6492 wrapped 서명이 검증 통과한다**
-- [ ] SIWE 메시지의 `chainId`가 8453이 아니면 verify가 400으로 거부된다
-- [ ] SIWE 메시지의 `domain`이 `ADMIN_DASHBOARD_URL` host와 다르면 verify가 401로 거부된다
-- [ ] verify 후 동일 nonce로 재시도하면 401이 반환된다 (1회용)
-- [ ] `ADMIN_WALLETS`에 없는 지갑이 verify하면 403이 반환된다
-- [ ] 발급된 JWT로 `GET /api/admin/agents` 호출 시 에이전트 목록이 반환된다
-- [ ] 발급된 JWT로 `POST /api/admin/agents/{agentId}` 호출 시 prompt가 수정된다
-- [ ] JWT 없이 admin 라우트 호출 시 401이 반환된다
-- [ ] 만료된 JWT(8시간 이후)로 호출 시 401이 반환된다
-- [ ] `X-Admin-Secret` 헤더로 admin 라우트 호출 시 인증되지 않는다 (하드 컷오버)
-- [ ] `JWT_SECRET` 미설정 시 verify는 500, admin 라우트는 401을 반환한다
-- [ ] `ADMIN_RPC_URL` 미설정 시 Base 공식 public RPC로 서명 검증이 동작한다
-- [ ] 기존 `GET /api/agents/list` (일반 모드)는 영향 없이 동작한다
-- [ ] `docs/API_ADMIN_AGENTS.md`가 새 인증 흐름 기준으로 갱신된다
+- [x] `GET /api/admin/auth/nonce?address=0x...` 호출 시 nonce + expiresAt가 반환된다
+- [x] nonce가 Redis에 5분 TTL로 저장된다
+- [x] `POST /api/admin/auth/verify` + 유효한 SIWE 서명 + 올바른 nonce → JWT가 발급된다
+- [x] **배포된 Coinbase Smart Wallet의 EIP-1271 서명이 검증 통과한다** (Base mainnet RPC 호출 동반)
+- [x] **미배포 (counterfactual) Coinbase Smart Wallet의 ERC-6492 wrapped 서명이 검증 통과한다**
+- [x] SIWE 메시지의 `chainId`가 8453이 아니면 verify가 400으로 거부된다
+- [x] SIWE 메시지의 `domain`이 `ADMIN_DASHBOARD_URL` host와 다르면 verify가 401로 거부된다
+- [x] verify 후 동일 nonce로 재시도하면 401이 반환된다 (1회용)
+- [x] `ADMIN_WALLETS`에 없는 지갑이 verify하면 403이 반환된다
+- [x] 발급된 JWT로 `GET /api/admin/agents` 호출 시 에이전트 목록이 반환된다
+- [x] 발급된 JWT로 `POST /api/admin/agents/{agentId}` 호출 시 prompt가 수정된다
+- [x] JWT 없이 admin 라우트 호출 시 401이 반환된다
+- [x] 만료된 JWT(8시간 이후)로 호출 시 401이 반환된다
+- [x] `X-Admin-Secret` 헤더로 admin 라우트 호출 시 인증되지 않는다 (하드 컷오버)
+- [x] `JWT_SECRET` 미설정 시 verify는 500, admin 라우트는 401을 반환한다
+- [x] `ADMIN_RPC_URL` 미설정 시 Base 공식 public RPC로 서명 검증이 동작한다
+- [x] 기존 `GET /api/agents/list` (일반 모드)는 영향 없이 동작한다
+- [x] `docs/API_ADMIN_AGENTS.md`가 새 인증 흐름 기준으로 갱신된다
