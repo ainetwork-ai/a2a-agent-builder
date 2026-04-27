@@ -7,6 +7,8 @@ interface RedisClient {
   get<T = string>(key: string): Promise<T | null>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   set(key: string, value: any): Promise<string | null>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  setex(key: string, seconds: number, value: any): Promise<string | null>;
   del(...keys: string[]): Promise<number>;
   exists(...keys: string[]): Promise<number>;
   sadd(key: string, ...members: string[]): Promise<number>;
@@ -55,6 +57,13 @@ class IORedisWrapper implements RedisClient {
     return 'OK';
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async setex(key: string, seconds: number, value: any): Promise<string | null> {
+    const serialized = typeof value === 'string' ? value : JSON.stringify(value);
+    await this.client.setex(key, seconds, serialized);
+    return 'OK';
+  }
+
   async del(...keys: string[]): Promise<number> {
     return this.client.del(...keys);
   }
@@ -100,6 +109,13 @@ class UpstashRedisWrapper implements RedisClient {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async set(key: string, value: any): Promise<string | null> {
     await this.client.set(key, value);
+    return 'OK';
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async setex(key: string, seconds: number, value: any): Promise<string | null> {
+    const serialized = typeof value === 'string' ? value : JSON.stringify(value);
+    await this.client.setex(key, seconds, serialized);
     return 'OK';
   }
 
@@ -178,4 +194,5 @@ export const redis = new Proxy({} as RedisClient, {
 export const REDIS_KEYS = {
   AGENT: (agentId: string) => `agent:${agentId}`,
   AGENT_LIST: "agents:list",
+  ADMIN_NONCE: (address: string) => `admin:nonce:${address}`,
 } as const;
