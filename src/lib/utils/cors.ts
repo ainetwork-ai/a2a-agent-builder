@@ -11,8 +11,8 @@ export function getCorsHeaders(request: Request): Record<string, string> {
 
   return {
     'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Secret',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   };
 }
 
@@ -23,4 +23,15 @@ export function corsOptions(request: Request): NextResponse {
     status: 204,
     headers,
   });
+}
+
+export function corsErrorResponse(
+  request: Request,
+  status: number,
+  error: string
+): NextResponse {
+  return NextResponse.json(
+    { error },
+    { status, headers: getCorsHeaders(request) }
+  );
 }
