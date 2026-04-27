@@ -102,23 +102,23 @@ Dashboard 클라이언트가 SIWE 메시지를 Coinbase Smart Wallet으로 서�
 ### 태스크
 
 #### 의존성 설치
-- [ ] `siwe` 패키지를 설치한다: `yarn add siwe`. SIWE 메시지 파싱(`new SiweMessage(string)`)에만 사용하며 `siweMessage.verify()`는 호출하지 않으므로 `ethers` peer dependency 설치는 생략한다 (런타임에서 ethers를 import하지 않음).
-- [ ] `jose` 패키지를 설치한다: `yarn add jose`.
-- [ ] `viem` 추가 설치 불필요 (이미 `package.json`에 `^2.21.53` 설치됨).
+- [x] `siwe` 패키지를 설치한다: `yarn add siwe`. SIWE 메시지 파싱(`new SiweMessage(string)`)에만 사용하며 `siweMessage.verify()`는 호출하지 않으므로 `ethers` peer dependency 설치는 생략한다 (런타임에서 ethers를 import하지 않음).
+- [x] `jose` 패키지를 설치한다: `yarn add jose`.
+- [x] `viem` 추가 설치 불필요 (이미 `package.json`에 `^2.21.53` 설치됨).
 
 #### viem public client 헬퍼 생성
-- [ ] `src/lib/adminViemClient.ts` 파일을 생성한다.
-- [ ] `viem`과 `viem/chains`에서 필요한 심볼을 import한다: `createPublicClient`, `http`, `base`.
-- [ ] `getAdminViemClient()` 함수를 export한다:
+- [x] `src/lib/adminViemClient.ts` 파일을 생성한다.
+- [x] `viem`과 `viem/chains`에서 필요한 심볼을 import한다: `createPublicClient`, `http`, `base`.
+- [x] `getAdminViemClient()` 함수를 export한다:
   - `process.env.ADMIN_RPC_URL`이 설정되어 있으면 해당 URL을, 미설정이면 기본값 `'https://mainnet.base.org'`(Base 공식 public RPC)을 사용한다.
   - `createPublicClient({ chain: base, transport: http(rpcUrl) })`를 반환한다.
   - 모듈 레벨 캐시를 사용해 중복 생성하지 않는다.
-- [ ] `EXPECTED_CHAIN_ID = 8453` 상수를 export한다 (Base mainnet).
+- [x] `EXPECTED_CHAIN_ID = 8453` 상수를 export한다 (Base mainnet).
 
 #### Verify 엔드포인트 생성
-- [ ] `src/app/api/admin/auth/verify/route.ts` 파일을 생성한다.
-- [ ] `OPTIONS` 핸들러를 추가한다.
-- [ ] `POST` 핸들러를 구현한다:
+- [x] `src/app/api/admin/auth/verify/route.ts` 파일을 생성한다.
+- [x] `OPTIONS` 핸들러를 추가한다.
+- [x] `POST` 핸들러를 구현한다:
   1. `request.json()`으로 `{ message, signature }` body를 파싱한다. 둘 중 하나라도 없으면 400을 반환한다.
   2. `new SiweMessage(message)`로 SIWE 메시지를 파싱한다. 파싱 실패 시 `{ error: 'Invalid SIWE message' }`, 400을 반환한다.
   3. SIWE 메시지 필드 검증:
@@ -137,8 +137,8 @@ Dashboard 클라이언트가 SIWE 메시지를 Coinbase Smart Wallet으로 서�
      - ExpirationTime: `'8h'`
      - IssuedAt: 현재 시각
   10. `{ token, expiresAt }`를 반환한다. `expiresAt`는 `new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString()`.
-- [ ] try-catch로 전체를 감싸고 에러 시 500을 반환한다. RPC 에러는 503으로 분리하지 않고 500으로 통일한다 (단순화).
-- [ ] 이 엔드포인트는 admin 인증을 요구하지 않는다 (로그인 과정의 일부).
+- [x] try-catch로 전체를 감싸고 에러 시 500을 반환한다. RPC 에러는 503으로 분리하지 않고 500으로 통일한다 (단순화).
+- [x] 이 엔드포인트는 admin 인증을 요구하지 않는다 (로그인 과정의 일부).
 
 ### 주의사항
 - `siweMessage.verify({ signature })`는 절대 호출하지 않는다 — EOA만 지원하여 smart wallet 서명을 거부한다. 반드시 viem `client.verifyMessage()`를 사용한다.
