@@ -2,14 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAllAgents } from '@/lib/agentStore';
 import { getIntents } from '@/lib/intentStore';
 import { getCorsHeaders, corsOptions } from '@/lib/utils/cors';
-import { verifyAdminSecret, countFacts } from '@/lib/adminAuth';
+import { verifyAdminJwt, countFacts } from '@/lib/adminAuth';
 
 export async function OPTIONS(request: NextRequest) {
   return corsOptions(request);
 }
 
 export async function GET(request: NextRequest) {
-  const authError = verifyAdminSecret(request);
+  const authError = await verifyAdminJwt(request);
   if (authError) return authError;
 
   const { searchParams } = new URL(request.url);

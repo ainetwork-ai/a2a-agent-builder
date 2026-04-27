@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAgent, setAgent } from '@/lib/agentStore';
 import { getCorsHeaders, corsOptions } from '@/lib/utils/cors';
-import { verifyAdminSecret } from '@/lib/adminAuth';
+import { verifyAdminJwt } from '@/lib/adminAuth';
 
 export async function OPTIONS(request: NextRequest) {
   return corsOptions(request);
@@ -13,7 +13,7 @@ export async function POST(
 ) {
   const corsHeaders = getCorsHeaders(request);
 
-  const authError = verifyAdminSecret(request);
+  const authError = await verifyAdminJwt(request);
   if (authError) return authError;
 
   try {

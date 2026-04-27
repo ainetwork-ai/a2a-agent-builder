@@ -187,25 +187,25 @@ export function verifyAdminSecret(request: NextRequest): NextResponse | null {
 ### 태스크
 
 #### adminAuth.ts 교체
-- [ ] `verifyAdminSecret` 함수를 삭제한다.
-- [ ] `verifyAdminJwt` 함수를 추가한다. 시그니처: `async function verifyAdminJwt(request: NextRequest): Promise<NextResponse | null>`. 비동기 함수이다 (`jwtVerify`가 async).
+- [x] `verifyAdminSecret` 함수를 삭제한다.
+- [x] `verifyAdminJwt` 함수를 추가한다. 시그니처: `async function verifyAdminJwt(request: NextRequest): Promise<NextResponse | null>`. 비동기 함수이다 (`jwtVerify`가 async).
   1. `request.headers.get('Authorization')`에서 `Bearer ` prefix를 제거하여 token을 추출한다. 헤더가 없거나 형식이 틀리면 401을 반환한다.
   2. `process.env.JWT_SECRET`이 없으면 401을 반환한다.
   3. `jose.jwtVerify(token, new TextEncoder().encode(process.env.JWT_SECRET))`를 호출한다. 실패(만료, 서명 불일치 등) 시 401을 반환한다.
   4. payload에서 `address`를 추출하고, `ADMIN_WALLETS` env에 포함되는지 확인한다. 미포함이면 403을 반환한다 (토큰 발급 후 allowlist에서 제거된 경우).
   5. 검증 성공이면 `null`을 반환한다.
-- [ ] `verifyAdminJwt`와 `countFacts`를 export한다 (`verifyAdminSecret` export 제거).
+- [x] `verifyAdminJwt`와 `countFacts`를 export한다 (`verifyAdminSecret` export 제거).
 
 #### Admin 라우트 import 교체
-- [ ] `src/app/api/admin/agents/route.ts`에서:
+- [x] `src/app/api/admin/agents/route.ts`에서:
   - `import { verifyAdminSecret, countFacts }` → `import { verifyAdminJwt, countFacts }`
   - `verifyAdminSecret(request)` 호출을 `await verifyAdminJwt(request)`로 변경. GET 함수를 `async`로 유지 (이미 async).
-- [ ] `src/app/api/admin/agents/[agentId]/route.ts`에서:
+- [x] `src/app/api/admin/agents/[agentId]/route.ts`에서:
   - `import { verifyAdminSecret }` → `import { verifyAdminJwt }`
   - `verifyAdminSecret(request)` 호출을 `await verifyAdminJwt(request)`로 변경.
 
 #### CORS 헤더 업데이트
-- [ ] `src/lib/utils/cors.ts`의 `getCorsHeaders`에서 `Access-Control-Allow-Headers`를 `'Content-Type, Authorization'`으로 변경한다 (`X-Admin-Secret` 제거, `Authorization` 추가).
+- [x] `src/lib/utils/cors.ts`의 `getCorsHeaders`에서 `Access-Control-Allow-Headers`를 `'Content-Type, Authorization'`으로 변경한다 (`X-Admin-Secret` 제거, `Authorization` 추가).
 
 ### 주의사항
 - `countFacts` 함수는 변경하지 않는다 — admin 목록 라우트에서 계속 사용 중이다.
