@@ -190,16 +190,16 @@ EPIC3(Story 3.2)에서 작성한 API 명세 문서가 기존 경로(`/api/agents
 ### 태스크
 
 #### 명세 문서 갱신
-- [ ] 엔드포인트 1(에이전트 목록 조회)의 경로를 `GET /api/agents/list`에서 `GET /api/admin/agents`로 변경한다.
-- [ ] 엔드포인트 2(에이전트 상세 메모리 조회)는 경로 변경 없음 (`GET /api/agents/{agentId}/status`). 인증 불필요인 점 유지.
-- [ ] 엔드포인트 3을 추가한다: `POST /api/admin/agents/{agentId}` (프롬프트 수정).
+- [x] 엔드포인트 1(에이전트 목록 조회)의 경로를 `GET /api/agents/list`에서 `GET /api/admin/agents`로 변경한다.
+- [x] 엔드포인트 2(에이전트 상세 메모리 조회)는 경로 변경 없음 (`GET /api/agents/{agentId}/status`). 인증 불필요인 점 유지.
+- [x] 엔드포인트 3을 추가한다: `POST /api/admin/agents/{agentId}` (프롬프트 수정).
   - 인증: `X-Admin-Secret` 헤더 필수
   - Request Body: `{ "prompt": "new system prompt text" }`
   - 성공 응답 (200): `{ "success": true, "agentId": "...", "prompt": "..." }`
   - 에러 응답: 400 (prompt 누락), 401 (인증 실패), 404 (에이전트 없음)
   - 요청/응답 예시 (curl + JSON)
-- [ ] 권장 사용 흐름 섹션에 prompt 수정 흐름을 추가한다.
-- [ ] curl 예시의 URL을 새 경로로 변경한다.
+- [x] 권장 사용 흐름 섹션에 prompt 수정 흐름을 추가한다.
+- [x] curl 예시의 URL을 새 경로로 변경한다.
 
 ### 주의사항
 - 기존 status API 관련 내용은 그대로 유지한다.
