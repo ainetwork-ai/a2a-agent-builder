@@ -2,15 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 import { corsErrorResponse } from './utils/cors';
 
-const ADMIN_WALLETS_SET = new Set(
-  (process.env.ADMIN_WALLETS || '')
+// Read env on every call so ADMIN_WALLETS rotations take effect without restart.
+// Parse cost is negligible (CSV split + Set build per request).
+export function isAdminWallet(address: string): boolean {
+  const wallets = (process.env.ADMIN_WALLETS || '')
     .split(',')
     .map((w) => w.trim().toLowerCase())
-    .filter((w) => w.length > 0)
-);
-
-export function isAdminWallet(address: string): boolean {
-  return ADMIN_WALLETS_SET.has(address.toLowerCase());
+    .filter((w) => w.length > 0);
+  return wallets.includes(address.toLowerCase());
 }
 
 /**
@@ -38,7 +37,11 @@ export async function verifyAdminJwt(request: NextRequest): Promise<NextResponse
 
   let address: string;
   try {
-    const { payload } = await jwtVerify(token, new TextEncoder().encode(jwtSecret));
+    const { payload } = await jwtVerify(
+      token,
+      new TextEncoder().encode(jwtSecret),
+      { algorithms: ['HS256'] }
+    );
     if (typeof payload.address !== 'string') {
       return corsErrorResponse(request, 401, 'Unauthorized');
     }

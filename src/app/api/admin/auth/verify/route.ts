@@ -8,7 +8,7 @@ import { isAdminWallet } from '@/lib/adminAuth';
 
 const JWT_TTL_SECONDS = 8 * 60 * 60;
 
-const EXPECTED_HOST: string | null = (() => {
+function getExpectedHost(): string | null {
   const url = process.env.ADMIN_DASHBOARD_URL;
   if (!url) return null;
   try {
@@ -16,7 +16,7 @@ const EXPECTED_HOST: string | null = (() => {
   } catch {
     return null;
   }
-})();
+}
 
 export async function OPTIONS(request: NextRequest) {
   return corsOptions(request);
@@ -50,7 +50,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (!EXPECTED_HOST || siweMessage.domain !== EXPECTED_HOST) {
+    const expectedHost = getExpectedHost();
+    if (!expectedHost || siweMessage.domain !== expectedHost) {
       return corsErrorResponse(request, 401, 'Domain mismatch');
     }
 
@@ -66,6 +67,9 @@ export async function POST(request: NextRequest) {
     if (!storedNonce || storedNonce !== siweMessage.nonce) {
       return corsErrorResponse(request, 401, 'Invalid or expired nonce');
     }
+    // Consume the nonce on match (one verify attempt per nonce, regardless of
+    // downstream success). Re-trying requires a fresh nonce.
+    await redis.del(REDIS_KEYS.ADMIN_NONCE(address));
 
     if (!isAdminWallet(address)) {
       return corsErrorResponse(request, 403, 'Address not authorized as admin');
@@ -83,8 +87,6 @@ export async function POST(request: NextRequest) {
     if (!valid) {
       return corsErrorResponse(request, 401, 'Invalid signature');
     }
-
-    await redis.del(REDIS_KEYS.ADMIN_NONCE(address));
 
     const token = await new SignJWT({ address })
       .setProtectedHeader({ alg: 'HS256' })
