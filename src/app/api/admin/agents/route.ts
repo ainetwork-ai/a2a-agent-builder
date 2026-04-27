@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAllAgents } from '@/lib/agentStore';
 import { getIntents } from '@/lib/intentStore';
 import { getCorsHeaders, corsOptions } from '@/lib/utils/cors';
-import { verifyAdminJwt, countFacts } from '@/lib/adminAuth';
+import { verifyAdminJwt } from '@/lib/adminAuth';
+
+function countFacts(text: string): number {
+  if (!text || text === '(empty)') return 0;
+  return text.split('\n').filter((f) => f.trim()).length;
+}
 
 export async function OPTIONS(request: NextRequest) {
   return corsOptions(request);
@@ -17,7 +22,6 @@ export async function GET(request: NextRequest) {
 
   const allAgents = await getAllAgents();
 
-  // Filter agents by wallet address if provided
   const filteredAgents = walletAddress
     ? allAgents.filter(
         (agent) => agent.creator && agent.creator.toLowerCase() === walletAddress.toLowerCase()

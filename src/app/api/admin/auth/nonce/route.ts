@@ -1,25 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { redis, REDIS_KEYS } from '@/lib/redis';
-import { getCorsHeaders, corsOptions } from '@/lib/utils/cors';
+import { getCorsHeaders, corsOptions, corsErrorResponse } from '@/lib/utils/cors';
 
-const NONCE_TTL_SECONDS = 300; // 5 minutes
+const NONCE_TTL_SECONDS = 300;
+const ADDRESS_REGEX = /^0x[0-9a-fA-F]{40}$/;
 
 export async function OPTIONS(request: NextRequest) {
   return corsOptions(request);
 }
 
 export async function GET(request: NextRequest) {
-  const corsHeaders = getCorsHeaders(request);
-
   const { searchParams } = new URL(request.url);
   const address = searchParams.get('address');
 
   if (!address) {
-    return NextResponse.json(
-      { error: 'Missing required parameter: address' },
-      { status: 400, headers: corsHeaders }
-    );
+    return corsErrorResponse(request, 400, 'Missing required parameter: address');
+  }
+  if (!ADDRESS_REGEX.test(address)) {
+    return corsErrorResponse(request, 400, 'Invalid address format');
   }
 
   const normalizedAddress = address.toLowerCase();
@@ -31,5 +30,5 @@ export async function GET(request: NextRequest) {
 
   console.log(`🔑 [admin] Issued nonce for ${normalizedAddress}`);
 
-  return NextResponse.json({ nonce, expiresAt }, { headers: corsHeaders });
+  return NextResponse.json({ nonce, expiresAt }, { headers: getCorsHeaders(request) });
 }

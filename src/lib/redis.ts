@@ -114,7 +114,8 @@ class UpstashRedisWrapper implements RedisClient {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async setex(key: string, seconds: number, value: any): Promise<string | null> {
-    await this.client.setex(key, seconds, value);
+    const serialized = typeof value === 'string' ? value : JSON.stringify(value);
+    await this.client.setex(key, seconds, serialized);
     return 'OK';
   }
 

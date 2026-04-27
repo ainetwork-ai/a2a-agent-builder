@@ -1,10 +1,7 @@
 import { createPublicClient, http } from 'viem';
 import { base } from 'viem/chains';
 
-/**
- * Base mainnet chainId. SIWE messages must use this chainId.
- */
-export const EXPECTED_CHAIN_ID = 8453;
+export const EXPECTED_CHAIN_ID = base.id;
 
 const DEFAULT_RPC_URL = 'https://mainnet.base.org';
 

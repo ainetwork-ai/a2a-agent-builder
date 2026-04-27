@@ -24,3 +24,14 @@ export function corsOptions(request: Request): NextResponse {
     headers,
   });
 }
+
+export function corsErrorResponse(
+  request: Request,
+  status: number,
+  error: string
+): NextResponse {
+  return NextResponse.json(
+    { error },
+    { status, headers: getCorsHeaders(request) }
+  );
+}
