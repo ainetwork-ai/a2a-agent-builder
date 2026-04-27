@@ -1,4 +1,4 @@
-import { createPublicClient, http, type PublicClient } from 'viem';
+import { createPublicClient, http } from 'viem';
 import { base } from 'viem/chains';
 
 /**
@@ -8,7 +8,17 @@ export const EXPECTED_CHAIN_ID = 8453;
 
 const DEFAULT_RPC_URL = 'https://mainnet.base.org';
 
-let cachedClient: PublicClient | null = null;
+type AdminViemClient = ReturnType<typeof createBaseClient>;
+
+function createBaseClient() {
+  const rpcUrl = process.env.ADMIN_RPC_URL || DEFAULT_RPC_URL;
+  return createPublicClient({
+    chain: base,
+    transport: http(rpcUrl),
+  });
+}
+
+let cachedClient: AdminViemClient | null = null;
 
 /**
  * Returns a cached viem PublicClient connected to Base mainnet.
@@ -20,13 +30,9 @@ let cachedClient: PublicClient | null = null;
  * EOA, EIP-1271 (deployed smart wallets), and ERC-6492 (counterfactual smart
  * wallets) signatures via the universalSignatureValidator contract.
  */
-export function getAdminViemClient(): PublicClient {
+export function getAdminViemClient(): AdminViemClient {
   if (!cachedClient) {
-    const rpcUrl = process.env.ADMIN_RPC_URL || DEFAULT_RPC_URL;
-    cachedClient = createPublicClient({
-      chain: base,
-      transport: http(rpcUrl),
-    });
+    cachedClient = createBaseClient();
   }
   return cachedClient;
 }
