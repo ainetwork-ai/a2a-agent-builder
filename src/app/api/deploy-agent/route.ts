@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { AgentConfig } from '@/types/agent';
 import { setAgent } from '@/lib/agentStore';
 import { setIntents } from '@/lib/intentStore';
+import { setSkillInstructions, extractSkillInstructions, toPublicSkills } from '@/lib/skillStore';
 import type { AgentCard } from "@a2a-js/sdk";
 
 export async function POST(request: NextRequest) {
@@ -13,6 +14,9 @@ export async function POST(request: NextRequest) {
 
     console.log('🚀 Deploying agent:', agentId, 'Creator:', creatorAddress);
 
+    // Private instructions map: { skillId: instructions } — never on the card.
+    const skillInstructions = extractSkillInstructions(agentConfig.skills);
+
     const agentCard: AgentCard = {
       name: agentConfig.name,
       description: agentConfig.description,
@@ -22,7 +26,8 @@ export async function POST(request: NextRequest) {
       capabilities: agentConfig.capabilities,
       defaultInputModes: agentConfig.defaultInputModes,
       defaultOutputModes: agentConfig.defaultOutputModes,
-      skills: agentConfig.skills,
+      // Strip instructions — the public card keeps only id/name/description/tags.
+      skills: toPublicSkills(agentConfig.skills),
     };
 
     // Store intents in separate redis key if provided
@@ -32,6 +37,9 @@ export async function POST(request: NextRequest) {
       console.log('✅ Intents stored successfully');
     }
 
+    // Store private skill instructions in their own redis key
+    await setSkillInstructions(agentId, skillInstructions);
+
     // Store agent configuration in Redis
     // The executor will be created on-demand when the agent receives a message
     await setAgent(agentId, {
@@ -40,6 +48,7 @@ export async function POST(request: NextRequest) {
       modelProvider: agentConfig.modelProvider,
       modelName: agentConfig.modelName,
       creator: creatorAddress,
+      useSkills: agentConfig.useSkills ?? Object.keys(skillInstructions).length > 0,
     });
 
     console.log('✅ Agent deployed successfully:', agentId);
