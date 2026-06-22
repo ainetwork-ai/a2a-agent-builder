@@ -25,6 +25,7 @@ export interface StoredAgent {
   caringMemories?: Record<string, string>;
   // Intent pattern matching: { [intent]: [keywords] }
   intentPatterns?: Record<string, string[]>;
+  useSkills?: boolean;
   // Legacy fields for backward compatibility
   memories?: Record<string, IntentMemory>;
   thinking?: string;
@@ -46,6 +47,7 @@ export interface SerializableAgent {
   thinkingMemories?: Record<string, string>;
   caringMemories?: Record<string, string>;
   intentPatterns?: Record<string, string[]>;
+  useSkills?: boolean;
   // Legacy
   memories?: Record<string, IntentMemory>;
   thinking?: string;
@@ -65,6 +67,7 @@ function toSerializable(agent: StoredAgent): SerializableAgent {
     thinkingMemories: agent.thinkingMemories,
     caringMemories: agent.caringMemories,
     intentPatterns: agent.intentPatterns,
+    useSkills: agent.useSkills,
     memories: agent.memories,
     thinking: agent.thinking,
     caring: agent.caring,
@@ -81,6 +84,7 @@ function fromSerializable(data: SerializableAgent): StoredAgent {
     thinkingMemories: data.thinkingMemories,
     caringMemories: data.caringMemories,
     intentPatterns: data.intentPatterns,
+    useSkills: data.useSkills,
     memories: data.memories,
     thinking: data.thinking,
     caring: data.caring,

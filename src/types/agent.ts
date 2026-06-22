@@ -15,6 +15,9 @@ export interface Skill {
   name: string;
   description: string;
   tags: string[];
+  // Private authoring/transport body — stripped from the public AgentCard,
+  // persisted separately under skill:{agentId}. Never exposed in .well-known.
+  instructions?: string;
 }
 
 export interface Intent {
@@ -32,6 +35,10 @@ export interface AgentConfig extends AgentCard {
   updatedAt: Date;
   deployed?: boolean;
   intents?: Intent[];
+  // When true, the runtime runs the skill-selection step and injects matched
+  // skill instructions. Defaults (at deploy/edit time) to "on if any skill has
+  // instructions".
+  useSkills?: boolean;
 }
 
 export interface AgentBuilderForm {
@@ -42,4 +49,5 @@ export interface AgentBuilderForm {
   modelProvider: 'google' | 'openai' | 'anthropic';
   modelName: string;
   intents?: Intent[];
+  useSkills?: boolean;
 }
