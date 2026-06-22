@@ -38,6 +38,8 @@
   - `getSkillInstructions(agentId: string): Promise<Record<string, string>>`
   - `setSkillInstructions(agentId: string, map: Record<string, string>): Promise<void>` (deletes key when map empty)
   - `deleteSkillInstructions(agentId: string): Promise<void>`
+  - `extractSkillInstructions(skills: Skill[] | undefined): Record<string, string>` (pure; `{ skillId: trimmed instructions }`, omits blank/absent)
+  - `toPublicSkills(skills: Skill[] | undefined): Skill[]` (pure; strips `instructions`, keeps `id/name/description/tags`)
 
 - [ ] **Step 1: Extend the types**
 
@@ -94,6 +96,7 @@ In `src/lib/agentStore.ts`:
 
 ```typescript
 import { redis, REDIS_KEYS } from "./redis";
+import type { Skill } from "@/types/agent";
 
 /**
  * Skill Instruction Storage
@@ -125,6 +128,35 @@ export async function setSkillInstructions(
 export async function deleteSkillInstructions(agentId: string): Promise<void> {
   await redis.del(REDIS_KEYS.SKILL(agentId));
 }
+
+/**
+ * Pure helper: build the private { skillId: instructions } map from a skills
+ * array, keeping only non-blank trimmed instructions. Shared by deploy & edit.
+ */
+export function extractSkillInstructions(
+  skills: Skill[] | undefined
+): Record<string, string> {
+  const map: Record<string, string> = {};
+  for (const s of skills ?? []) {
+    if (s.instructions && s.instructions.trim()) {
+      map[s.id] = s.instructions.trim();
+    }
+  }
+  return map;
+}
+
+/**
+ * Pure helper: strip `instructions` so only public card fields remain.
+ * Shared by deploy & edit to enforce the privacy invariant in one place.
+ */
+export function toPublicSkills(skills: Skill[] | undefined): Skill[] {
+  return (skills ?? []).map((s) => ({
+    id: s.id,
+    name: s.name,
+    description: s.description,
+    tags: s.tags,
+  }));
+}
 ```
 
 - [ ] **Step 5: Write the round-trip test (will fail until redis is reachable)**
@@ -133,13 +165,36 @@ Create `scripts/test-skill-store.ts`:
 
 ```typescript
 #!/usr/bin/env tsx
-/** Run with: npx tsx scripts/test-skill-store.ts (requires REDIS_URL or KV_REST_API_*) */
-import { getSkillInstructions, setSkillInstructions, deleteSkillInstructions } from "../src/lib/skillStore";
+/** Run with: npx tsx scripts/test-skill-store.ts (round-trip requires REDIS_URL or KV_REST_API_*) */
+import {
+  getSkillInstructions,
+  setSkillInstructions,
+  deleteSkillInstructions,
+  extractSkillInstructions,
+  toPublicSkills,
+} from "../src/lib/skillStore";
+import type { Skill } from "../src/types/agent";
 
 function assert(cond: boolean, msg: string) {
   if (!cond) { console.error("❌ FAIL:", msg); process.exit(1); }
   console.log("✅", msg);
 }
+
+// --- Pure helper tests (no redis) ---
+const skills: Skill[] = [
+  { id: "a", name: "A", description: "da", tags: ["t"], instructions: "  do A  " },
+  { id: "b", name: "B", description: "db", tags: [], instructions: "   " },
+  { id: "c", name: "C", description: "dc", tags: [] },
+];
+const extracted = extractSkillInstructions(skills);
+assert(extracted["a"] === "do A", "extract trims instructions");
+assert(!("b" in extracted), "extract omits blank instructions");
+assert(!("c" in extracted), "extract omits absent instructions");
+assert(Object.keys(extractSkillInstructions(undefined)).length === 0, "extract handles undefined");
+
+const pub = toPublicSkills(skills);
+assert(pub.every((s) => !("instructions" in s)), "toPublicSkills strips instructions");
+assert(pub[0].id === "a" && pub[0].name === "A" && pub[0].tags.length === 1, "toPublicSkills keeps public fields");
 
 async function main() {
   const agentId = "test-skill-store-agent";
@@ -164,7 +219,7 @@ main().catch((e) => { console.error(e); process.exit(1); });
 - [ ] **Step 6: Run the test**
 
 Run: `npx tsx scripts/test-skill-store.ts`
-Expected: prints `🎉 skillStore OK` and exits 0. (If Redis env vars are absent, it exits 1 with a config error — set `REDIS_URL` or `KV_REST_API_URL`/`KV_REST_API_TOKEN` first, e.g. from `.env`.)
+Expected: the pure-helper assertions pass first, then prints `🎉 skillStore OK` and exits 0. (The round-trip portion needs Redis env vars — `REDIS_URL` or `KV_REST_API_URL`/`KV_REST_API_TOKEN`, e.g. from `.env`. If absent it exits 1 at the first redis call, but the pure-helper assertions above will already have passed.)
 
 - [ ] **Step 7: Compile gate**
 
@@ -475,32 +530,24 @@ git commit -m "feat(skills): select and inject skill instructions at message tim
 - Modify: `src/app/api/deploy-agent/route.ts`
 
 **Interfaces:**
-- Consumes: `setSkillInstructions` (Task 1); `Skill.instructions`, `AgentConfig.useSkills` (Task 1).
+- Consumes: `setSkillInstructions`, `extractSkillInstructions`, `toPublicSkills` (Task 1); `Skill.instructions`, `AgentConfig.useSkills` (Task 1).
 - Produces: deployed agents have `skill:{agentId}` populated and `useSkills` set; the stored card carries no `instructions`.
 
-- [ ] **Step 1: Import the skill store**
+- [ ] **Step 1: Import the skill store helpers**
 
 Add to the imports at the top of `src/app/api/deploy-agent/route.ts`:
 
 ```typescript
-import { setSkillInstructions } from '@/lib/skillStore';
-import type { Skill } from '@/types/agent';
+import { setSkillInstructions, extractSkillInstructions, toPublicSkills } from '@/lib/skillStore';
 ```
 
 - [ ] **Step 2: Build the instruction map and strip the card**
 
-Replace the `agentCard` construction (lines 16-26) with a stripped-skills version, and compute the instruction map:
+Replace the `agentCard` construction (lines 16-26) with a stripped-skills version, and compute the instruction map using the shared helpers:
 
 ```typescript
-    const incomingSkills = (agentConfig.skills ?? []) as Skill[];
-
     // Private instructions map: { skillId: instructions } — never on the card.
-    const skillInstructions: Record<string, string> = {};
-    for (const s of incomingSkills) {
-      if (s.instructions && s.instructions.trim()) {
-        skillInstructions[s.id] = s.instructions.trim();
-      }
-    }
+    const skillInstructions = extractSkillInstructions(agentConfig.skills);
 
     const agentCard: AgentCard = {
       name: agentConfig.name,
@@ -512,12 +559,7 @@ Replace the `agentCard` construction (lines 16-26) with a stripped-skills versio
       defaultInputModes: agentConfig.defaultInputModes,
       defaultOutputModes: agentConfig.defaultOutputModes,
       // Strip instructions — the public card keeps only id/name/description/tags.
-      skills: incomingSkills.map((s) => ({
-        id: s.id,
-        name: s.name,
-        description: s.description,
-        tags: s.tags,
-      })),
+      skills: toPublicSkills(agentConfig.skills),
     };
 ```
 
@@ -563,15 +605,15 @@ git commit -m "feat(skills): persist skill instructions and useSkills on deploy"
 - Modify: `src/app/api/agents/[agentId]/edit/route.ts`
 
 **Interfaces:**
-- Consumes: `setSkillInstructions` (Task 1); `Skill.instructions`, `StoredAgent.useSkills`.
+- Consumes: `setSkillInstructions`, `extractSkillInstructions`, `toPublicSkills` (Task 1); `Skill.instructions`, `StoredAgent.useSkills`.
 - Produces: edits update `skill:{agentId}` and `useSkills`; the updated card carries no `instructions`.
 
-- [ ] **Step 1: Import the skill store**
+- [ ] **Step 1: Import the skill store helpers**
 
 Add to imports in `src/app/api/agents/[agentId]/edit/route.ts`:
 
 ```typescript
-import { setSkillInstructions } from '@/lib/skillStore';
+import { setSkillInstructions, extractSkillInstructions, toPublicSkills } from '@/lib/skillStore';
 ```
 
 And add `useSkills` to the destructured body (line 14):
@@ -582,17 +624,11 @@ And add `useSkills` to the destructured body (line 14):
 
 - [ ] **Step 2: Build the instruction map, persist it, and strip the card**
 
-After the intents update block (lines 42-47), add:
+After the intents update block (lines 42-47), add (using the shared helpers — `skills as Skill[]` because the body field is untyped):
 
 ```typescript
     // Build and persist the private skill-instructions map
-    const incomingSkills = (skills ?? []) as Skill[];
-    const skillInstructions: Record<string, string> = {};
-    for (const s of incomingSkills) {
-      if (s.instructions && s.instructions.trim()) {
-        skillInstructions[s.id] = s.instructions.trim();
-      }
-    }
+    const skillInstructions = extractSkillInstructions(skills as Skill[]);
     await setSkillInstructions(agentId, skillInstructions);
 ```
 
@@ -604,12 +640,7 @@ Change the `updatedCard` (lines 50-56) so card skills are stripped:
       name,
       description,
       url,
-      skills: incomingSkills.map((s) => ({
-        id: s.id,
-        name: s.name,
-        description: s.description,
-        tags: s.tags,
-      })) as Skill[],
+      skills: toPublicSkills(skills as Skill[]),
     };
 ```
 
@@ -894,4 +925,4 @@ git commit -m "feat(skills): builder UI for skill instructions and useSkills tog
 
 **Placeholder scan:** No TBD/TODO; every code step shows full code; commands have expected output. ✓
 
-**Type consistency:** `parseSelectedSkillIds`, `selectSkills`, `SkillCatalogItem`, `getSkillInstructions`/`setSkillInstructions`/`deleteSkillInstructions`, `REDIS_KEYS.SKILL`, `Skill.instructions`, `useSkills` are named identically across producing and consuming tasks. `buildSystemPrompt(intent, thinking, caring, a2a?, skills?)` is called with `(intent, thinking, caring, undefined, activeSkillsText)` in Task 3 step 4. ✓
+**Type consistency:** `parseSelectedSkillIds`, `selectSkills`, `SkillCatalogItem`, `getSkillInstructions`/`setSkillInstructions`/`deleteSkillInstructions`, `extractSkillInstructions`/`toPublicSkills` (shared by Tasks 4 & 5 — no duplicated logic), `REDIS_KEYS.SKILL`, `Skill.instructions`, `useSkills` are named identically across producing and consuming tasks. `buildSystemPrompt(intent, thinking, caring, a2a?, skills?)` is called with `(intent, thinking, caring, undefined, activeSkillsText)` in Task 3 step 4. ✓
