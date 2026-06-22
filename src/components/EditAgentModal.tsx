@@ -20,6 +20,7 @@ interface EditAgentModalProps {
     modelProvider: string;
     modelName: string;
     prompt: string;
+    useSkills?: boolean;
   };
   onSuccess: () => void;
 }
@@ -36,6 +37,7 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
     modelProvider: agent.modelProvider as 'google' | 'openai' | 'anthropic',
     modelName: agent.modelName,
     prompt: agent.prompt,
+    useSkills: agent.useSkills ?? false,
   });
 
   const [isSaving, setIsSaving] = useState(false);
@@ -51,6 +53,7 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
         modelProvider: agent.modelProvider as 'google' | 'openai' | 'anthropic',
         modelName: agent.modelName,
         prompt: agent.prompt,
+        useSkills: agent.useSkills ?? false,
       });
     }
   }, [isOpen, agent.id]); // agent 전체 대신 agent.id만 의존성으로

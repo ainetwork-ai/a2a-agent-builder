@@ -79,7 +79,8 @@ export function AgentForm({ initialData, onSubmit, onCancel, onAutoComplete, isS
       id: `skill-${Date.now()}`,
       name: '',
       description: '',
-      tags: []
+      tags: [],
+      instructions: '',
     };
     setFormData(prev => ({ ...prev, skills: [...prev.skills, newSkill] }));
   };
@@ -190,11 +191,22 @@ export function AgentForm({ initialData, onSubmit, onCancel, onAutoComplete, isS
       {/* Skills Section */}
       {/* Skills Section */}
       <div>
-        <div className="mb-4">
-          <label className="block text-lg font-bold text-gray-900">Skills</label>
-          <p className="text-sm text-gray-500 mt-1">
-            Set up your agent&apos;s capabilities and tools
-          </p>
+        <div className="mb-4 flex items-start justify-between gap-4">
+          <div>
+            <label className="block text-lg font-bold text-gray-900">Skills</label>
+            <p className="text-sm text-gray-500 mt-1">
+              Set up your agent&apos;s capabilities and tools
+            </p>
+          </div>
+          <label className="flex items-center gap-2 mt-1 shrink-0 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={formData.useSkills ?? false}
+              onChange={(e) => setFormData({ ...formData, useSkills: e.target.checked })}
+              className="h-4 w-4 accent-purple-600"
+            />
+            <span className="text-sm font-medium text-gray-700">Use skills in replies</span>
+          </label>
         </div>
 
         <div className="space-y-3 mb-4">
@@ -309,6 +321,24 @@ export function AgentForm({ initialData, onSubmit, onCancel, onAutoComplete, isS
                       placeholder={skill.tags.length === 0 ? 'Type tag and press Enter...' : ''}
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1.5">
+                    Instructions
+                  </label>
+                  <p className="text-[11px] text-gray-400 mb-1.5">
+                    Loaded into the agent only when this skill is relevant to the user&apos;s message.
+                  </p>
+                  <textarea
+                    value={skill.instructions || ''}
+                    onChange={(e) => handleSkillChange(skill.id, 'instructions', e.target.value)}
+                    onFocus={(e) => (e.target.rows = 6)}
+                    onBlur={(e) => (e.target.rows = 3)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none bg-gray-50 focus:bg-white transition-all text-base"
+                    rows={3}
+                    placeholder="Concrete guidance/knowledge the agent applies when this skill is selected..."
+                  />
                 </div>
               </div>
             </div>
