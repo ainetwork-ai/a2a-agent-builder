@@ -54,6 +54,7 @@ export default function AgentBuilder() {
     modelProvider: 'google',
     modelName: 'gemma-3-27b-it',
     intents: [],
+    useSkills: false,
   });
   const [generatedForm, setGeneratedForm] = useState<AgentBuilderForm | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -224,6 +225,7 @@ export default function AgentBuilder() {
       intents: agentData.intents,
       modelProvider: agentData.modelProvider,
       modelName: agentData.modelName,
+      useSkills: agentData.useSkills ?? agentData.skills.some((s) => s.instructions?.trim()),
       createdAt: new Date(),
       updatedAt: new Date(),
     };

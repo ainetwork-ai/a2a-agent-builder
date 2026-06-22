@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllAgents } from '@/lib/agentStore';
 import { getIntents } from '@/lib/intentStore';
+import { getSkillInstructions } from '@/lib/skillStore';
 import { getCorsHeaders, corsOptions } from '@/lib/utils/cors';
 
 export async function OPTIONS(request: NextRequest) {
@@ -26,6 +27,7 @@ export async function GET(request: NextRequest) {
     filteredAgents.map(async (agent) => {
       const agentId = agent.card.url.split('/').pop() || '';
       const intents = await getIntents(agentId);
+      const skillInstructions = await getSkillInstructions(agentId);
 
       return {
         id: agentId,
@@ -35,8 +37,12 @@ export async function GET(request: NextRequest) {
         modelProvider: agent.modelProvider,
         modelName: agent.modelName,
         prompt: agent.prompt,
-        skills: agent.card.skills,
+        skills: agent.card.skills.map((s) => ({
+          ...s,
+          ...(skillInstructions[s.id] ? { instructions: skillInstructions[s.id] } : {}),
+        })),
         intents: intents.length > 0 ? intents : undefined,
+        useSkills: agent.useSkills ?? false,
         deployed: true,
         creator: agent.creator,
       };

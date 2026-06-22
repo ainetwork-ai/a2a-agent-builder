@@ -194,5 +194,6 @@ export const redis = new Proxy({} as RedisClient, {
 export const REDIS_KEYS = {
   AGENT: (agentId: string) => `agent:${agentId}`,
   AGENT_LIST: "agents:list",
+  SKILL: (agentId: string) => `skill:${agentId}`,
   ADMIN_NONCE: (address: string) => `admin:nonce:${address}`,
 } as const;
