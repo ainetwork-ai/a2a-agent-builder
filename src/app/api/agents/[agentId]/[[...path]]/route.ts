@@ -213,7 +213,7 @@ ${a2a}
               activeSkillsText = selectedIds
                 .map((id) => {
                   const skill = cardSkills.find((s) => s.id === id);
-                  return `## ${skill?.name ?? id}\n${skillInstructions[id].trim()}`;
+                  return `## ${skill?.name ?? id}\n${(skillInstructions[id] ?? '').trim()}`;
                 })
                 .join('\n\n');
               if (selectedIds.length > 0) {
