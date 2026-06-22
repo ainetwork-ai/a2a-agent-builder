@@ -61,7 +61,7 @@ Return ONLY valid JSON with ALL fields (both existing and generated), in this ex
   "name": "${partialData.name || 'Agent Name in English'}",
   "description": "${partialData.description || 'Brief description of what the agent does'}",
   "prompt": "${partialData.prompt || 'Detailed system prompt for the agent'}",
-  "skills": ${partialData.skills && partialData.skills.length > 0 ? JSON.stringify(partialData.skills) : '[{"id": "skill-id", "name": "Skill Name", "description": "What this skill does", "tags": ["tag1", "tag2"]}]'},
+  "skills": ${partialData.skills && partialData.skills.length > 0 ? JSON.stringify(partialData.skills) : '[{"id": "skill-id", "name": "Skill Name", "description": "When this skill is useful", "tags": ["tag1", "tag2"], "instructions": "Detailed guidance the agent applies when this skill is relevant."}]'},
   "intents": ${partialData.intents && partialData.intents.length > 0 ? JSON.stringify(partialData.intents) : '[]'},
   "modelProvider": "${modelProvider}",
   "modelName": "${modelName}"
@@ -74,7 +74,8 @@ IMPORTANT RULES:
 - Ensure consistency between all fields (new generated content should match the existing data)
 - Generated skills should be relevant to the existing name/description/prompt
 - Generate content in the SAME LANGUAGE as the user's input. If the user wrote in Korean, generate in Korean. If in English, generate in English.
-- Detect the language from existing fields (description, prompt, skill names/descriptions) and use that language for new content`;
+- Detect the language from existing fields (description, prompt, skill names/descriptions) and use that language for new content
+- When generating skills, include an "instructions" field per skill (concrete guidance the agent applies when the skill is relevant), in the same language as the existing fields`;
 
       userPrompt = `Complete the missing fields (${missingFields.join(', ')}) for this agent configuration. Keep existing fields unchanged. Generate new content in the same language as the existing user input.`;
 
@@ -92,8 +93,9 @@ Return ONLY valid JSON in this exact format:
     {
       "id": "skill-id",
       "name": "Skill Name",
-      "description": "What this skill does",
-      "tags": ["tag1", "tag2"]
+      "description": "When this skill is useful (one line, used to decide relevance)",
+      "tags": ["tag1", "tag2"],
+      "instructions": "Detailed guidance and knowledge the agent should apply when this skill is relevant. Several sentences."
     }
   ],
   "tags": ["relevant", "tags", "for", "the", "agent"],
@@ -107,6 +109,8 @@ IMPORTANT RULES:
 - The description can be in the same language as user's request
 - The prompt is detailed and defines the agent's personality, behavior, and expertise
 - Skills are relevant to the agent's purpose
+- Each skill MUST include an "instructions" field: a concrete, self-contained block of guidance/knowledge the agent applies when that skill is selected (distinct from the one-line description).
+- Write "instructions" in the SAME LANGUAGE as the user's request.
 - Tags help categorize the agent (in English)
 - Use "${modelProvider}" as modelProvider and "${modelName}" as modelName`;
 
