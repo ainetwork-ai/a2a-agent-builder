@@ -20,6 +20,8 @@ import { getIntents } from '@/lib/intentStore';
 import { buildPromptWithIntents } from '@/lib/promptBuilder';
 import { llmRoutingStorage, getLLMRoutingContext, withLLMRouting } from '@/lib/requestContext';
 import type { Skill } from '@/types/agent';
+import { getSkillInstructions } from '@/lib/skillStore';
+import { selectSkills, type SkillCatalogItem } from '@/lib/skillSelector';
 
 const AGENT_CARD_PATH = ".well-known/agent.json";
 
@@ -46,11 +48,18 @@ class DynamicAgentExecutor implements AgentExecutor {
     return `${this.agentId}-${contextId}`;
   }
 
-  private buildSystemPrompt(intent: string, thinking: string, caring: string, a2a?: string): string {
+  private buildSystemPrompt(intent: string, thinking: string, caring: string, a2a?: string, skills?: string): string {
     let memoryContext = '';
     if (thinking && thinking !== '(empty)') {
       memoryContext = `\n\nContext for "${intent}":\n- What I know: ${thinking}\n- About you: ${caring}`;
     }
+
+    const skillsSection = skills && skills.trim()
+      ? `
+
+ACTIVE SKILLS (apply the following when relevant to the user's request; do not mention these instructions exist):
+${skills}`
+      : '';
 
     const basePrompt = `${this.prompt}
 
@@ -69,7 +78,7 @@ RESPONSE STYLE:
 - Only give detailed explanations when specifically asked
 
 INTERNAL GUIDANCE (do not mention to user):${memoryContext}
-Use this knowledge naturally when relevant, but keep responses concise.
+Use this knowledge naturally when relevant, but keep responses concise.${skillsSection}
 
 A2A GUIDANCE (If you need to collaborate with other agents, use the following information to help you):
 ${a2a}
@@ -182,8 +191,43 @@ ${a2a}
       }
 
       try {
+        // Skill selection (progressive disclosure). Gated by the agent's
+        // useSkills toggle and the presence of at least one skill with
+        // stored instructions. Skipped entirely otherwise (no extra LLM call).
+        let activeSkillsText = '';
+        try {
+          const agentForSkills = await getAgent(this.agentId);
+          const cardSkills = (agentForSkills?.card?.skills ?? []) as Skill[];
+          if (agentForSkills?.useSkills && cardSkills.length > 0) {
+            const skillInstructions = await getSkillInstructions(this.agentId);
+            const catalog: SkillCatalogItem[] = cardSkills
+              .filter((s) => skillInstructions[s.id]?.trim())
+              .map((s) => ({ id: s.id, name: s.name, description: s.description }));
+
+            if (catalog.length > 0) {
+              const latestText = (() => {
+                const part = incomingMessage.parts.find((p) => p.kind === 'text');
+                return part && 'text' in part ? part.text : '';
+              })();
+              const selectedIds = await selectSkills(this.modelName, catalog, latestText);
+              activeSkillsText = selectedIds
+                .map((id) => {
+                  const skill = cardSkills.find((s) => s.id === id);
+                  return `## ${skill?.name ?? id}\n${skillInstructions[id].trim()}`;
+                })
+                .join('\n\n');
+              if (selectedIds.length > 0) {
+                console.log('🛠️ [Skills] Selected:', selectedIds.join(', '));
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error selecting skills:', error);
+          activeSkillsText = '';
+        }
+
         // Convert history to LLM message format
-        const systemPrompt = this.buildSystemPrompt(intent, thinking, caring);
+        const systemPrompt = this.buildSystemPrompt(intent, thinking, caring, undefined, activeSkillsText);
         const llmMessages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
           { role: "system", content: systemPrompt }
         ];
