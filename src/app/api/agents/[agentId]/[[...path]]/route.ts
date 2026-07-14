@@ -115,6 +115,11 @@ ${a2a}
       const key = this.getContextKey(contextId);
       const incomingMessage = requestContext.userMessage;
 
+      // Computed ONCE, before the incoming message is pushed into history,
+      // so both the auto classifyIntent path and the form-intent path see
+      // the same conversation text without double-counting the latest message.
+      const conversationText = this.buildConversationText(key, incomingMessage);
+
       // Classify intent and get relevant memory
       let intent = 'general';
       let thinking = '';
@@ -160,8 +165,6 @@ ${a2a}
             const waitTime = Math.ceil((DynamicAgentExecutor.MIN_INTENT_CLASSIFICATION_INTERVAL_MS - (now - lastClassification)) / 1000);
             console.log(`⏭️ [Intent] Using previous intent: ${intent} (wait ${waitTime}s for re-classification)`);
           } else {
-            const conversationText = this.buildConversationText(key, incomingMessage);
-
             intent = await classifyIntent(this.agentId, conversationText, previousIntent, existingIntents);
 
             DynamicAgentExecutor.lastIntentClassificationTime[classificationKey] = now;
@@ -205,9 +208,8 @@ ${a2a}
       try {
         const formIntents = await getIntents(this.agentId);
         if (formIntents.length > 0) {
-          const convoText = this.buildConversationText(key, incomingMessage);
-          const alreadySent = await getSentImageIntents(contextId);
-          const result = await classifyFormIntent(formIntents, convoText, alreadySent);
+          const alreadySent = await getSentImageIntents(this.agentId, contextId);
+          const result = await classifyFormIntent(formIntents, conversationText, alreadySent);
           if (result.intent) {
             matchedFormIntent = formIntents.find(i => i.name === result.intent) || null;
             sendImage = result.sendImage;
@@ -295,7 +297,7 @@ ${a2a}
         const parts = buildResponseParts(responseText, matchedFormIntent, sendImage);
         const imagesAttached = parts.some(p => p.kind === 'file');
         if (imagesAttached && matchedFormIntent) {
-          await markImageIntentSent(contextId, matchedFormIntent.name);
+          await markImageIntentSent(this.agentId, contextId, matchedFormIntent.name);
         }
 
         const responseMessage: Message = {
