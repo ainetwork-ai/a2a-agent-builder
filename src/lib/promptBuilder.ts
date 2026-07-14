@@ -93,3 +93,16 @@ export function parseIntentsFromPrompt(fullPrompt: string): {
     };
   }
 }
+
+/**
+ * Build a prompt section injecting ONLY the matched intent's guidance.
+ * Used when a separate classifier has already selected the intent, so the
+ * full intent catalog does not need to be injected every turn.
+ */
+export function buildSelectedIntentSection(intent: Intent): string {
+  return `
+
+You are responding under a matched intent. Follow this guidance exactly, including any tone or format it specifies:
+- Intent: ${intent.name}
+- Guidance: ${intent.prompt}`;
+}
