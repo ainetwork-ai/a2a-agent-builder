@@ -51,6 +51,19 @@ class DynamicAgentExecutor implements AgentExecutor {
     return `${this.agentId}-${contextId}`;
   }
 
+  // Builds the conversation-text string used by both the auto classifyIntent
+  // path and the form-intent classification path: last 6 history messages
+  // for this context plus the incoming message, formatted as "role: text".
+  private buildConversationText(historyKey: string, incomingMessage: Message): string {
+    const recent = (DynamicAgentExecutor.historyStore[historyKey] || []).slice(-6);
+    return [...recent, incomingMessage]
+      .map(msg => {
+        const textPart = msg.parts.find(part => part.kind === "text");
+        return `${msg.role}: ${textPart && 'text' in textPart ? textPart.text : ""}`;
+      })
+      .join('\n');
+  }
+
   private buildSystemPrompt(intent: string, thinking: string, caring: string, a2a?: string, skills?: string, formIntentSection?: string): string {
     let memoryContext = '';
     if (thinking && thinking !== '(empty)') {
@@ -147,15 +160,7 @@ ${a2a}
             const waitTime = Math.ceil((DynamicAgentExecutor.MIN_INTENT_CLASSIFICATION_INTERVAL_MS - (now - lastClassification)) / 1000);
             console.log(`⏭️ [Intent] Using previous intent: ${intent} (wait ${waitTime}s for re-classification)`);
           } else {
-            const existingHistory = DynamicAgentExecutor.historyStore[key] || [];
-            const recentHistory = existingHistory.slice(-6);
-            const messagesForContext = [...recentHistory, incomingMessage];
-            const conversationText = messagesForContext
-              .map(msg => {
-                const textPart = msg.parts.find(part => part.kind === "text");
-                return `${msg.role}: ${textPart && 'text' in textPart ? textPart.text : ""}`;
-              })
-              .join('\n');
+            const conversationText = this.buildConversationText(key, incomingMessage);
 
             intent = await classifyIntent(this.agentId, conversationText, previousIntent, existingIntents);
 
@@ -200,13 +205,7 @@ ${a2a}
       try {
         const formIntents = await getIntents(this.agentId);
         if (formIntents.length > 0) {
-          const recent = (DynamicAgentExecutor.historyStore[key] || []).slice(-6);
-          const convoText = [...recent, incomingMessage]
-            .map(msg => {
-              const tp = msg.parts.find(p => p.kind === 'text');
-              return `${msg.role}: ${tp && 'text' in tp ? tp.text : ''}`;
-            })
-            .join('\n');
+          const convoText = this.buildConversationText(key, incomingMessage);
           const alreadySent = await getSentImageIntents(contextId);
           const result = await classifyFormIntent(formIntents, convoText, alreadySent);
           if (result.intent) {
