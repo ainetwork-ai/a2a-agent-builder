@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { A2AClient } from "@a2a-js/sdk/client";
 import { AgentCard, SendMessageSuccessResponse } from "@a2a-js/sdk";
-import { Message, MessageSendParams, TextPart } from "@a2a-js/sdk";
+import { Message, MessageSendParams, TextPart, FilePart } from "@a2a-js/sdk";
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Archive, Send } from 'lucide-react';
@@ -245,9 +245,28 @@ export default function HomeContent() {
   };
 
   const renderMessageContent = (message: Message) => {
-    return message.parts
-      .filter((part): part is TextPart => part.kind === 'text')
-      .map((part, index) => <span key={index}>{part.text}</span>);
+    return message.parts.map((part, index) => {
+      if (part.kind === 'text') {
+        return <span key={index}>{(part as TextPart).text}</span>;
+      }
+      if (part.kind === 'file') {
+        const file = (part as FilePart).file;
+        const mime = 'mimeType' in file ? file.mimeType : undefined;
+        const uri = 'uri' in file ? file.uri : undefined;
+        if (uri && mime && mime.startsWith('image/')) {
+          return (
+            <img
+              key={index}
+              src={uri}
+              alt=""
+              className="max-w-full rounded-lg mt-2"
+              onError={(e) => { (e.currentTarget.style.display = 'none'); }}
+            />
+          );
+        }
+      }
+      return null;
+    });
   };
 
   // Handle username setup
