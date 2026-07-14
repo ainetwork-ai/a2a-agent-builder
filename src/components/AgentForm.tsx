@@ -110,9 +110,46 @@ export function AgentForm({ initialData, onSubmit, onCancel, onAutoComplete, isS
   const handleIntentChange = (index: number, field: keyof Intent, value: string) => {
     setFormData(prev => ({
       ...prev,
-      intents: (prev.intents || []).map((intent, i) => 
+      intents: (prev.intents || []).map((intent, i) =>
         i === index ? { ...intent, [field]: value } : intent
       )
+    }));
+  };
+
+  const MAX_INTENT_IMAGES = 3;
+
+  const handleIntentImageUpload = async (index: number, file: File) => {
+    const intents = formData.intents || [];
+    const current = intents[index]?.images || [];
+    if (current.length >= MAX_INTENT_IMAGES) {
+      alert(`인텐트당 최대 ${MAX_INTENT_IMAGES}장까지 가능합니다.`);
+      return;
+    }
+    const body = new FormData();
+    body.append('file', file);
+    const res = await fetch('/api/upload-image', { method: 'POST', body });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(`업로드 실패: ${err.error || res.status}`);
+      return;
+    }
+    const image = await res.json(); // { url, mimeType }
+    setFormData(prev => ({
+      ...prev,
+      intents: (prev.intents || []).map((it, i) =>
+        i === index ? { ...it, images: [...(it.images || []), image] } : it
+      ),
+    }));
+  };
+
+  const removeIntentImage = (index: number, imgIdx: number) => {
+    setFormData(prev => ({
+      ...prev,
+      intents: (prev.intents || []).map((it, i) =>
+        i === index
+          ? { ...it, images: (it.images || []).filter((_, j) => j !== imgIdx) }
+          : it
+      ),
     }));
   };
 
@@ -443,6 +480,36 @@ export function AgentForm({ initialData, onSubmit, onCancel, onAutoComplete, isS
                     rows={3}
                     placeholder="What the agent should know or say..."
                   />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1.5">
+                    Images (max 3)
+                  </label>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {(intent.images || []).map((img, imgIdx) => (
+                      <div key={imgIdx} className="relative">
+                        <img src={img.url} alt="" className="w-16 h-16 object-cover rounded-lg border border-gray-200" />
+                        <button
+                          type="button"
+                          onClick={() => removeIntentImage(idx, imgIdx)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center"
+                        >×</button>
+                      </div>
+                    ))}
+                  </div>
+                  {(intent.images || []).length < 3 && (
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) handleIntentImageUpload(idx, f);
+                        e.target.value = '';
+                      }}
+                      className="text-sm"
+                    />
+                  )}
                 </div>
               </div>
             </div>
