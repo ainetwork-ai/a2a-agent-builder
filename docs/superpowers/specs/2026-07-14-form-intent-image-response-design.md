@@ -63,6 +63,14 @@ executor의 생성 호출 **직전**에 매 턴 실행한다(레이트리밋 없
 메시지가 왔을 때 즉시 잡아야 함). 분류는 경량 프롬프트라 비용이 작다. 모델은 생성과 동일
 모델 사용.
 
+- **폼 인텐트가 0개인 에이전트는 분류기를 완전히 스킵**하고 기존 텍스트 경로를 탄다
+  (비용/지연 0). `buildPromptWithIntents`가 intents 없으면 base를 그대로 반환하는 것과
+  동일 원칙.
+- 분류 대상은 **전체 폼 인텐트**(이미지 유무 무관). intent 매칭과 `sendImage`를 한 번에
+  판단하며, 이미지가 없는 인텐트로 매칭되면 `sendImage` 값은 코드가 무시한다.
+- 턴당 LLM 콜은 자동 `classifyIntent`(1분 rate-limit·미사용) + `classifyFormIntent` +
+  생성으로, 실질 2회. 지연 인지는 해둔다.
+
 **입력**
 - 사용자 메시지 + 최근 대화 맥락
 - 폼 인텐트 목록의 `name` + `description`만 (전체 `prompt`는 불필요)
@@ -219,9 +227,29 @@ message.parts.map((part, i) =>
 - `intentStore` 라운드트립: `images` 포함 저장·로드.
 - 업로드 엔드포인트 검증 로직: MIME/용량 단위 테스트, 인텐트당 ≤3 검증.
 
-## 10. 범위 밖 (Non-goals)
+## 10. 알려진 한계 & 구현 시 검증
+
+**알려진 한계**
+- **도배 방지는 best-effort.** "이미 이미지를 보낸 인텐트" 복원은 `historyStore`
+  (`route.ts:30`, `private static Record<...>` — 프로세스 로컬·휘발성)에 의존한다.
+  서버리스(env에 `VERCEL_URL` 존재) 콜드스타트/인스턴스 분리 시 history가 소실되면
+  복원이 리셋되어 **이미지가 한 번 더 전송될 수 있다**(크래시 아님, 우아한 degradation).
+  결정적 가드를 두지 않기로 한 결정과 함께 감수한다. 향후 강화가 필요하면 contextId별
+  sent-set을 Redis에 두는 방식으로 확장 가능(현재 YAGNI).
+
+**구현 시 검증 항목**
+- `@a2a-js/sdk`의 `FilePart` 실제 타입(`kind: "file"`, `file.uri`, `file.mimeType`
+  필드명)을 코드 작성 시작 시 타입으로 확인. 본 스펙의 형태는 프로토콜 통례 기준 가정.
+- 편집용 에이전트 로드 경로가 `intents`를 `getIntents`로 하이드레이션할 때 `images`까지
+  포함하는지 확인(현재 편집 저장 경로는 `Intent[]`를 그대로 `setIntents` 하므로
+  라운드트립 자체는 안전).
+
+## 11. 범위 밖 (Non-goals)
 
 - 자동 인텐트(`classifyIntent`)/지식 진화 시스템 변경.
 - 동적으로 생성/선택되는 이미지 (본 설계는 인텐트당 고정 에셋만).
 - 서명 URL(signed URL), 외부 스토리지 외 대안.
 - base64 인라인 전송 (URL 방식만).
+- **에이전트-투-에이전트 소비.** 입력 파싱이 text part만 읽으므로, 다른 에이전트가 이
+  에이전트를 호출하면 `FilePart`는 무시된다. 이미지는 **사람 대상 채팅 전용**이며 A2A
+  협업 경로의 이미지 수신은 다루지 않는다.
