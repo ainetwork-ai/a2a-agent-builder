@@ -49,7 +49,7 @@
 | 매칭 감지 | **2콜 분리 분류** — 생성과 별개의 분류 호출로 폼 인텐트를 코드가 확정 |
 | 생성 프롬프트 | 매칭된 인텐트의 `prompt`만 주입(전체 카탈로그 대신) → 토큰 절약 |
 | 답변 구성 | 텍스트 + 이미지 |
-| 도배 방지 | 분류기가 `sendImage`까지 판별 + 코드가 "이미 보낸 인텐트" 힌트 주입. 결정적 가드는 제외 |
+| 도배 방지 | 분류기가 `sendImage`까지 판별 + 코드가 "이미 보낸 인텐트" 힌트 주입(Redis sent-set 기반). 결정적 가드는 제외 |
 | 허용 MIME | `image/png`, `image/jpeg`, `image/webp`, `image/gif` |
 | 용량 상한 | 5MB/장 |
 | 인텐트당 최대 | 3장 |
@@ -95,7 +95,7 @@ executor의 생성 호출 **직전**에 매 턴 실행한다(레이트리밋 없
 ```
 사용자 메시지 도착
   ↓
-① history의 metadata.intent에서 "이미 이미지를 보낸 인텐트 목록" 추출 (결정적)
+① Redis sent-set(intent-images-sent:{contextId}) read → "이미 이미지를 보낸 인텐트 목록"
   ↓
 ② classifyFormIntent(폼인텐트[name,desc], 사용자메시지, 최근맥락, 이미보낸목록)
      → { intent, sendImage }                                   [신규 LLM 콜]
@@ -109,17 +109,20 @@ executor의 생성 호출 **직전**에 매 턴 실행한다(레이트리밋 없
 ⑤ parts 조립
    - intent 있고, 그 인텐트에 images 있고, sendImage === true:
        [TextPart(responseText), FilePart(uri,mimeType)…]
+       → Redis sent-set 에 intentName add (TTL 갱신)
    - 그 외:
        [TextPart(responseText)]
   ↓
 ⑥ responseMessage.metadata.intent = 매칭된 폼 인텐트 name (관측성)
-     + 이미지 첨부 여부 표시 (①의 "이미 보낸 목록" 추출 근거)
   ↓
 ⑦ eventBus.publish → (SDK·JSON-RPC·SSE 무수정) → 클라이언트
 ```
 
-> `metadata`에 매칭된 인텐트 name과 "이미지 첨부됨" 여부를 기록해야, 다음 턴의 ①에서
-> "이미 이미지를 보낸 인텐트"를 정확히 복원할 수 있다.
+> **도배 방지 상태는 Redis에 둔다.** "이미 이미지를 보낸 인텐트"는 휘발성
+> `historyStore`가 아니라 Redis sent-set(`intent-images-sent:{contextId}`)에서 읽고 쓴다.
+> 대화 메시지 히스토리 자체는 Redis에 저장되지 않으므로(§10 참조) 이 최소 상태만 영속화한다.
+> 이로써 서버리스 콜드스타트/인스턴스 분리에도 도배 방지가 유지된다. `metadata.intent`는
+> 관측성 용도로만 남긴다.
 
 > **구조 변경 주의**: 현재 폼 인텐트는 `ensureAgentHandlers`
 > (`route.ts:337-339`)에서 `buildPromptWithIntents`로 **핸들러 생성 시 1회** 전체
@@ -155,6 +158,15 @@ interface IntentImage {
 폼 인텐트는 이미 `src/lib/intentStore.ts`의 `intent:{agentId}` Redis 키에 배열로 저장된다.
 `images`는 그 배열 요소에 얹혀 자동 직렬화되므로 **저장 계층 스키마 변경 없음**. 배포
 (`src/app/api/deploy-agent/route.ts`)·편집(`.../agents/[agentId]/edit/route.ts`) 경로 그대로.
+
+### 도배 방지 상태 (신규 Redis 키)
+
+- `REDIS_KEYS`(`src/lib/redis.ts:194`)에 `INTENT_IMAGES_SENT: (contextId) =>
+  intent-images-sent:${contextId}` 추가.
+- 값: 이미지가 이미 전송된 폼 인텐트 name의 Set (Redis set).
+- TTL: 대화 만료를 위해 만료 시간 설정(예: 24h), 전송마다 갱신.
+- `contextId`는 클라이언트가 대화 세션 동안 유지(`HomeContent.tsx:34`)하므로 연속 대화
+  전체에서 동일 키를 공유한다. 새로고침 시 새 `contextId` → 새 대화로 리셋(기존 동작과 동일).
 
 ## 6. 업로드 경로 (신규)
 
@@ -222,20 +234,26 @@ message.parts.map((part, i) =>
 ## 9. 테스트 (레포 컨벤션: 테스트 러너 없음 → `tsx` 어서션 스크립트)
 
 - `classifyFormIntent` 파싱: 매칭/`null`/오염 응답 → 기대 반환. `sendImage` 파싱.
-- "이미 보낸 인텐트 목록" 추출: history metadata로부터 결정적 복원.
+- 도배 방지 sent-set: Redis read/add 라운드트립, TTL 설정, `contextId`별 격리.
 - 생산자 parts 조립: images 유무 × `sendImage` 조합에 따른 parts 배열.
 - `intentStore` 라운드트립: `images` 포함 저장·로드.
 - 업로드 엔드포인트 검증 로직: MIME/용량 단위 테스트, 인텐트당 ≤3 검증.
 
 ## 10. 알려진 한계 & 구현 시 검증
 
-**알려진 한계**
-- **도배 방지는 best-effort.** "이미 이미지를 보낸 인텐트" 복원은 `historyStore`
-  (`route.ts:30`, `private static Record<...>` — 프로세스 로컬·휘발성)에 의존한다.
-  서버리스(env에 `VERCEL_URL` 존재) 콜드스타트/인스턴스 분리 시 history가 소실되면
-  복원이 리셋되어 **이미지가 한 번 더 전송될 수 있다**(크래시 아님, 우아한 degradation).
-  결정적 가드를 두지 않기로 한 결정과 함께 감수한다. 향후 강화가 필요하면 contextId별
-  sent-set을 Redis에 두는 방식으로 확장 가능(현재 YAGNI).
+**히스토리 영속성 사실관계**
+- 대화 메시지 히스토리는 **Redis에 저장되지 않는다.** Redis 키는 `agent:{id}`,
+  `agents:list`, `skill:{id}`, `admin:nonce`, `intent:{id}`뿐이다(`redis.ts:194-199`).
+  턴별 메시지는 인메모리 `historyStore`(`route.ts:30`, `private static`)와 A2A
+  `InMemoryTaskStore`에만 있어 프로세스 로컬·휘발성이다.
+- 따라서 "인메모리가 비면 Redis에서 히스토리를 복원" 은 소스가 없어 불가능하다. 대신
+  §4·§5의 **도배 방지 sent-set**만 Redis에 영속화하여, 히스토리 유실과 무관하게 연속
+  대화의 도배 방지를 유지한다.
+
+**남은 degradation (수용)**
+- 페이지 새로고침 시 클라이언트가 새 `contextId`를 생성하므로 sent-set이 비게 되어
+  이미지가 다시 한 번 전송될 수 있다. 이는 새 대화의 시작으로 간주되는 지점이며 기존
+  인메모리 히스토리도 동일하게 리셋되므로 퇴행이 아니다.
 
 **구현 시 검증 항목**
 - `@a2a-js/sdk`의 `FilePart` 실제 타입(`kind: "file"`, `file.uri`, `file.mimeType`
