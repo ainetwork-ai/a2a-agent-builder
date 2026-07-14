@@ -15,4 +15,9 @@ assert(bad.ok === false, 'pdf rejected');
 const tooBig = validateImageUpload('image/png', MAX_IMAGE_BYTES + 1);
 assert(tooBig.ok === false, 'oversized rejected');
 
+const empty = validateImageUpload('image/png', 0);
+assert(empty.ok === false, 'empty file rejected');
+
+assert(validateImageUpload('image/png', MAX_IMAGE_BYTES).ok === true, 'exact max size allowed');
+
 console.log('✅ image upload validation OK');

@@ -2,9 +2,12 @@ import { Storage } from '@google-cloud/storage';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
- * Uploads an image buffer to the configured GCS bucket (public-read) and
- * returns its public URL. Requires GCS_BUCKET_NAME and application default
- * credentials (GOOGLE_APPLICATION_CREDENTIALS) in the environment.
+ * Uploads an image buffer to the configured GCS bucket and returns its public
+ * URL. Object-level ACLs are intentionally NOT set: the bucket is expected to
+ * grant public read via bucket-level IAM (allUsers -> Storage Object Viewer),
+ * which is compatible with uniform bucket-level access. Requires
+ * GCS_BUCKET_NAME and application default credentials
+ * (GOOGLE_APPLICATION_CREDENTIALS) in the environment.
  */
 let storage: Storage | null = null;
 function getStorage(): Storage {
