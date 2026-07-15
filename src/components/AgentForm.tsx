@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { AgentBuilderForm, Skill, Intent } from '@/types/agent';
+import React, { useState, useEffect, useRef } from 'react';
+import { AgentBuilderForm, Skill, Intent, IntentImage } from '@/types/agent';
+import { FormIntentImage } from '@/lib/uploadIntentImages';
+import { validateImageUpload } from '@/lib/imageUploadValidation';
 import { getDisplayModelName } from '@/lib/utils/modelUtils';
 
 interface AgentFormProps {
@@ -22,9 +24,21 @@ export function AgentForm({ initialData, onSubmit, onCancel, onAutoComplete, isS
   const [tagInputs, setTagInputs] = useState<Record<string, string>>({});
   const [focusedSkillId, setFocusedSkillId] = useState<string | null>(null);
 
+  // Track blob object URLs created for pending image previews so they can be
+  // revoked on removal/unmount and avoid leaks.
+  const objectUrlsRef = useRef<Set<string>>(new Set());
+
   useEffect(() => {
     setFormData(initialData);
   }, [initialData]);
+
+  useEffect(() => {
+    const urls = objectUrlsRef.current;
+    return () => {
+      urls.forEach((u) => URL.revokeObjectURL(u));
+      urls.clear();
+    };
+  }, []);
 
   const handleSkillChange = (skillId: string, field: keyof Skill, value: string | string[]) => {
     setFormData(prev => ({
@@ -118,31 +132,39 @@ export function AgentForm({ initialData, onSubmit, onCancel, onAutoComplete, isS
 
   const MAX_INTENT_IMAGES = 3;
 
-  const handleIntentImageUpload = async (index: number, file: File) => {
-    const intents = formData.intents || [];
-    const current = intents[index]?.images || [];
+  // Select an image for an intent WITHOUT uploading — the File is held locally
+  // and previewed via a blob object URL. Pending files are uploaded at
+  // deploy/edit time (when the agentId is known) via resolveIntentImages.
+  const addIntentImage = (index: number, file: File) => {
+    const current = (formData.intents || [])[index]?.images || [];
     if (current.length >= MAX_INTENT_IMAGES) {
       alert(`인텐트당 최대 ${MAX_INTENT_IMAGES}장까지 가능합니다.`);
       return;
     }
-    const body = new FormData();
-    body.append('file', file);
-    const res = await fetch('/api/upload-image', { method: 'POST', body });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      alert(`업로드 실패: ${err.error || res.status}`);
+    const check = validateImageUpload(file.type, file.size);
+    if (!check.ok) {
+      alert(`이미지 오류: ${check.error}`);
       return;
     }
-    const image = await res.json(); // { url, mimeType }
+    const previewUrl = URL.createObjectURL(file);
+    objectUrlsRef.current.add(previewUrl);
+    const pending: FormIntentImage = { url: previewUrl, mimeType: file.type, file };
     setFormData(prev => ({
       ...prev,
       intents: (prev.intents || []).map((it, i) =>
-        i === index ? { ...it, images: [...(it.images || []), image] } : it
+        i === index
+          ? { ...it, images: [...((it.images as FormIntentImage[]) || []), pending] as IntentImage[] }
+          : it
       ),
     }));
   };
 
   const removeIntentImage = (index: number, imgIdx: number) => {
+    const removed = ((formData.intents || [])[index]?.images as FormIntentImage[] | undefined)?.[imgIdx];
+    if (removed?.file && removed.url.startsWith('blob:')) {
+      URL.revokeObjectURL(removed.url);
+      objectUrlsRef.current.delete(removed.url);
+    }
     setFormData(prev => ({
       ...prev,
       intents: (prev.intents || []).map((it, i) =>
@@ -504,7 +526,7 @@ export function AgentForm({ initialData, onSubmit, onCancel, onAutoComplete, isS
                       accept="image/png,image/jpeg,image/webp,image/gif"
                       onChange={(e) => {
                         const f = e.target.files?.[0];
-                        if (f) handleIntentImageUpload(idx, f);
+                        if (f) addIntentImage(idx, f);
                         e.target.value = '';
                       }}
                       className="text-sm"

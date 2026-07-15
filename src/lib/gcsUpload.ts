@@ -24,7 +24,8 @@ const EXT_BY_MIME: Record<string, string> = {
 
 export async function uploadImageToGcs(
   buffer: Buffer,
-  mimeType: string
+  mimeType: string,
+  agentId: string
 ): Promise<{ url: string; mimeType: string }> {
   const bucketName = process.env.GCS_BUCKET_NAME;
   if (!bucketName) {
@@ -32,7 +33,7 @@ export async function uploadImageToGcs(
   }
 
   const ext = EXT_BY_MIME[mimeType] || 'bin';
-  const objectName = `intent-images/${uuidv4()}.${ext}`;
+  const objectName = `intent-images/${agentId}/${uuidv4()}.${ext}`;
   const bucket = getStorage().bucket(bucketName);
   const file = bucket.file(objectName);
 

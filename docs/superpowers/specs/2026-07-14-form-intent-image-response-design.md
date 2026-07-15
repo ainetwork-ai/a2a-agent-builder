@@ -182,6 +182,15 @@ POST /api/agents/[agentId]/upload-image   (multipart/form-data)
 - 인텐트당 최대 3장 제약은 **폼 UI + 저장 검증** 양쪽에서 적용
   (업로드 엔드포인트는 단건 처리, 장수 제한은 폼/인텐트 저장 시점 검증).
 
+> **업로드 타이밍 (개정)**: 이미지는 파일 선택 즉시가 아니라 **배포(deploy)/편집(edit) 시점에
+> 업로드**한다. 폼은 선택된 `File`을 메모리에 들고(미리보기는 `blob:` object URL) 있다가,
+> `agentId`가 확정되는 배포/편집 시 `resolveIntentImages(agentId, intents)`
+> (`src/lib/uploadIntentImages.ts`)가 pending 파일만 업로드하고 `{url, mimeType}`로 치환한다.
+> 이렇게 해야 버킷 경로를 agentId로 네임스페이스할 수 있고, 생성만 하고 배포하지 않은
+> 이미지의 orphan 도 줄어든다. 엔드포인트는 agent-scoped
+> `POST /api/agents/{agentId}/upload-image`, 버킷 객체 경로는
+> `intent-images/{agentId}/{uuid}.{ext}` 이다.
+
 ## 7. 컴포넌트별 변경
 
 ### 생산자 (executor, `route.ts:266-277`)
