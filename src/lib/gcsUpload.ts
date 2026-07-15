@@ -11,7 +11,26 @@ import { v4 as uuidv4 } from 'uuid';
  */
 let storage: Storage | null = null;
 function getStorage(): Storage {
-  if (!storage) storage = new Storage();
+  if (!storage) {
+    // Inline credentials (raw JSON or base64-encoded JSON) take precedence for
+    // environments where a key file path is impractical (e.g. serverless).
+    // Falls back to ADC / GOOGLE_APPLICATION_CREDENTIALS file path otherwise.
+    const inline = process.env.GCS_CREDENTIALS_JSON?.trim();
+    if (inline) {
+      let credentials: { project_id?: string };
+      try {
+        const raw = inline.startsWith('{')
+          ? inline
+          : Buffer.from(inline, 'base64').toString('utf8');
+        credentials = JSON.parse(raw);
+      } catch {
+        throw new Error('GCS_CREDENTIALS_JSON is not valid JSON (raw or base64)');
+      }
+      storage = new Storage({ credentials, projectId: credentials.project_id });
+    } else {
+      storage = new Storage();
+    }
+  }
   return storage;
 }
 
