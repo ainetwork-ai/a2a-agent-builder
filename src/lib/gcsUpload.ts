@@ -3,11 +3,10 @@ import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Uploads an image buffer to the configured GCS bucket and returns its public
- * URL. Object-level ACLs are intentionally NOT set: the bucket is expected to
- * grant public read via bucket-level IAM (allUsers -> Storage Object Viewer),
- * which is compatible with uniform bucket-level access. Requires
- * GCS_BUCKET_NAME and application default credentials
- * (GOOGLE_APPLICATION_CREDENTIALS) in the environment.
+ * URL. The object is made publicly readable via an object-level ACL
+ * (predefinedAcl 'publicRead'), matching the org's shared fine-grained bucket
+ * convention. Requires GCS_BUCKET_NAME plus credentials via GCS_CREDENTIALS_JSON
+ * (inline) or ADC / GOOGLE_APPLICATION_CREDENTIALS.
  */
 let storage: Storage | null = null;
 function getStorage(): Storage {
@@ -56,7 +55,12 @@ export async function uploadImageToGcs(
   const bucket = getStorage().bucket(bucketName);
   const file = bucket.file(objectName);
 
-  await file.save(buffer, { contentType: mimeType, resumable: false });
+  await file.save(buffer, {
+    contentType: mimeType,
+    resumable: false,
+    predefinedAcl: 'publicRead',
+    metadata: { cacheControl: 'public, max-age=31536000' },
+  });
 
   const url = `https://storage.googleapis.com/${bucketName}/${objectName}`;
   return { url, mimeType };
