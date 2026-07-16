@@ -3,6 +3,7 @@ import { AgentConfig } from '@/types/agent';
 import { setAgent } from '@/lib/agentStore';
 import { setIntents } from '@/lib/intentStore';
 import { setSkillInstructions, extractSkillInstructions, toPublicSkills } from '@/lib/skillStore';
+import { ALLOWED_IMAGE_MIME_TYPES } from '@/lib/imageUploadValidation';
 import type { AgentCard } from "@a2a-js/sdk";
 
 export async function POST(request: NextRequest) {
@@ -17,6 +18,11 @@ export async function POST(request: NextRequest) {
     // Private instructions map: { skillId: instructions } — never on the card.
     const skillInstructions = extractSkillInstructions(agentConfig.skills);
 
+    const hasIntentImages = (agentConfig.intents || []).some(i => (i.images?.length ?? 0) > 0);
+    const outputModes = hasIntentImages
+      ? Array.from(new Set([...(agentConfig.defaultOutputModes || ['text']), ...ALLOWED_IMAGE_MIME_TYPES]))
+      : (agentConfig.defaultOutputModes || ['text']);
+
     const agentCard: AgentCard = {
       name: agentConfig.name,
       description: agentConfig.description,
@@ -25,7 +31,7 @@ export async function POST(request: NextRequest) {
       url: agentConfig.url,
       capabilities: agentConfig.capabilities,
       defaultInputModes: agentConfig.defaultInputModes,
-      defaultOutputModes: agentConfig.defaultOutputModes,
+      defaultOutputModes: outputModes,
       // Strip instructions — the public card keeps only id/name/description/tags.
       skills: toPublicSkills(agentConfig.skills),
     };

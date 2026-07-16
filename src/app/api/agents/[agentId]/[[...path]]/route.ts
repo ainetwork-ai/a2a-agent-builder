@@ -17,9 +17,12 @@ import { getBaseUrl } from '@/lib/url';
 import { autoEvolveAfterConversation } from '@/lib/thinkingEvolution';
 import { callLLM } from '@/lib/llmManager';
 import { getIntents } from '@/lib/intentStore';
-import { buildPromptWithIntents } from '@/lib/promptBuilder';
+import { buildSelectedIntentSection } from '@/lib/promptBuilder';
+import { classifyFormIntent } from '@/lib/formIntentClassifier';
+import { getSentImageIntents, markImageIntentSent } from '@/lib/imageSentStore';
+import { buildResponseParts } from '@/lib/responseParts';
 import { llmRoutingStorage, getLLMRoutingContext, withLLMRouting } from '@/lib/requestContext';
-import type { Skill } from '@/types/agent';
+import type { Skill, Intent } from '@/types/agent';
 import { getSkillInstructions } from '@/lib/skillStore';
 import { selectSkills, type SkillCatalogItem } from '@/lib/skillSelector';
 
@@ -48,7 +51,20 @@ class DynamicAgentExecutor implements AgentExecutor {
     return `${this.agentId}-${contextId}`;
   }
 
-  private buildSystemPrompt(intent: string, thinking: string, caring: string, a2a?: string, skills?: string): string {
+  // Builds the conversation-text string used by both the auto classifyIntent
+  // path and the form-intent classification path: last 6 history messages
+  // for this context plus the incoming message, formatted as "role: text".
+  private buildConversationText(historyKey: string, incomingMessage: Message): string {
+    const recent = (DynamicAgentExecutor.historyStore[historyKey] || []).slice(-6);
+    return [...recent, incomingMessage]
+      .map(msg => {
+        const textPart = msg.parts.find(part => part.kind === "text");
+        return `${msg.role}: ${textPart && 'text' in textPart ? textPart.text : ""}`;
+      })
+      .join('\n');
+  }
+
+  private buildSystemPrompt(intent: string, thinking: string, caring: string, a2a?: string, skills?: string, formIntentSection?: string): string {
     let memoryContext = '';
     if (thinking && thinking !== '(empty)') {
       memoryContext = `\n\nContext for "${intent}":\n- What I know: ${thinking}\n- About you: ${caring}`;
@@ -61,7 +77,7 @@ ACTIVE SKILLS (apply the following when relevant to the user's request; do not m
 ${skills}`
       : '';
 
-    const basePrompt = `${this.prompt}
+    const basePrompt = `${this.prompt}${formIntentSection || ''}
 
 LANGUAGE RULE:
 - IMPORTANT: You MUST respond ENTIRELY in the same language as the user's latest message.
@@ -98,6 +114,11 @@ ${a2a}
       const contextId = requestContext.contextId;
       const key = this.getContextKey(contextId);
       const incomingMessage = requestContext.userMessage;
+
+      // Computed ONCE, before the incoming message is pushed into history,
+      // so both the auto classifyIntent path and the form-intent path see
+      // the same conversation text without double-counting the latest message.
+      const conversationText = this.buildConversationText(key, incomingMessage);
 
       // Classify intent and get relevant memory
       let intent = 'general';
@@ -144,16 +165,6 @@ ${a2a}
             const waitTime = Math.ceil((DynamicAgentExecutor.MIN_INTENT_CLASSIFICATION_INTERVAL_MS - (now - lastClassification)) / 1000);
             console.log(`⏭️ [Intent] Using previous intent: ${intent} (wait ${waitTime}s for re-classification)`);
           } else {
-            const existingHistory = DynamicAgentExecutor.historyStore[key] || [];
-            const recentHistory = existingHistory.slice(-6);
-            const messagesForContext = [...recentHistory, incomingMessage];
-            const conversationText = messagesForContext
-              .map(msg => {
-                const textPart = msg.parts.find(part => part.kind === "text");
-                return `${msg.role}: ${textPart && 'text' in textPart ? textPart.text : ""}`;
-              })
-              .join('\n');
-
             intent = await classifyIntent(this.agentId, conversationText, previousIntent, existingIntents);
 
             DynamicAgentExecutor.lastIntentClassificationTime[classificationKey] = now;
@@ -188,6 +199,25 @@ ${a2a}
       const history = DynamicAgentExecutor.historyStore[key];
       if (incomingMessage) {
         history.push(incomingMessage);
+      }
+
+      // Form-intent classification (separate from auto classifyIntent).
+      // Decides which form intent matched and whether to attach its images.
+      let matchedFormIntent: Intent | null = null;
+      let sendImage = false;
+      try {
+        const formIntents = await getIntents(this.agentId);
+        if (formIntents.length > 0) {
+          const alreadySent = await getSentImageIntents(this.agentId, contextId);
+          const result = await classifyFormIntent(formIntents, conversationText, alreadySent);
+          if (result.intent) {
+            matchedFormIntent = formIntents.find(i => i.name === result.intent) || null;
+            sendImage = result.sendImage;
+          }
+          console.log('🎯 [FormIntent]', { intent: result.intent, sendImage });
+        }
+      } catch (error) {
+        console.error('Error classifying form intent:', error);
       }
 
       try {
@@ -227,7 +257,8 @@ ${a2a}
         }
 
         // Convert history to LLM message format
-        const systemPrompt = this.buildSystemPrompt(intent, thinking, caring, undefined, activeSkillsText);
+        const formIntentSection = matchedFormIntent ? buildSelectedIntentSection(matchedFormIntent) : undefined;
+        const systemPrompt = this.buildSystemPrompt(intent, thinking, caring, undefined, activeSkillsText, formIntentSection);
         const llmMessages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
           { role: "system", content: systemPrompt }
         ];
@@ -263,14 +294,19 @@ ${a2a}
         // Call LLM for user-facing responses
         const responseText = await callLLM(llmMessages);
 
+        const parts = buildResponseParts(responseText, matchedFormIntent, sendImage);
+        const imagesAttached = parts.some(p => p.kind === 'file');
+        if (imagesAttached && matchedFormIntent) {
+          await markImageIntentSent(this.agentId, contextId, matchedFormIntent.name);
+        }
+
         const responseMessage: Message = {
           kind: "message",
           messageId: uuidv4(),
           role: "agent",
-          parts: [{ kind: "text", text: responseText }],
+          parts,
           contextId,
-          // Store intent in metadata (non-standard but works for our use case)
-          ...(intent && { metadata: { intent } } as Partial<Message>)
+          ...(intent && { metadata: { intent, formIntent: matchedFormIntent?.name } } as Partial<Message>)
         };
 
         history.push(responseMessage);
@@ -334,9 +370,9 @@ async function ensureAgentHandlers(agent: StoredAgent, agentId: string): Promise
     return agent;
   }
 
-  // Load intents from redis and append them to the base prompt at runtime
-  const intents = await getIntents(agentId);
-  const fullPrompt = buildPromptWithIntents(agent.prompt, intents);
+  // Intents are now classified per-turn and injected selectively at execute()
+  // time, so the base prompt is passed as-is here.
+  const fullPrompt = agent.prompt;
 
   // Recreate handlers from stored data
   const executor = new DynamicAgentExecutor(

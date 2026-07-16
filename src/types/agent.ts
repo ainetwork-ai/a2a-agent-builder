@@ -20,10 +20,16 @@ export interface Skill {
   instructions?: string;
 }
 
+export interface IntentImage {
+  url: string;      // GCS bucket public URL
+  mimeType: string; // e.g. "image/png" — used for FilePart.file.mimeType
+}
+
 export interface Intent {
   name: string;
   description: string;
   prompt: string;
+  images?: IntentImage[]; // optional; up to 3
 }
 
 export interface AgentConfig extends AgentCard {

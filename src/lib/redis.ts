@@ -196,4 +196,5 @@ export const REDIS_KEYS = {
   AGENT_LIST: "agents:list",
   SKILL: (agentId: string) => `skill:${agentId}`,
   ADMIN_NONCE: (address: string) => `admin:nonce:${address}`,
+  INTENT_IMAGES_SENT: (agentId: string, contextId: string) => `intent-images-sent:${agentId}-${contextId}`,
 } as const;

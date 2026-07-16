@@ -6,6 +6,7 @@ import { useAccount } from 'wagmi';
 import { AgentForm } from './AgentForm';
 import { useToast } from '@/contexts/ToastContext';
 import { safeFetch } from '@/lib/utils/safeFetch';
+import { resolveIntentImages } from '@/lib/uploadIntentImages';
 
 interface EditAgentModalProps {
   isOpen: boolean;
@@ -83,11 +84,16 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
 
     setIsSaving(true);
     try {
+      // Upload any newly-selected intent images and replace them with their
+      // persisted bucket URLs; already-uploaded images pass through unchanged.
+      const resolvedIntents = await resolveIntentImages(agent.id, data.intents);
+
       await safeFetch(`/api/agents/${agent.id}/edit`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...data,
+          intents: resolvedIntents,
           address,
         }),
       });

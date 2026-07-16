@@ -9,6 +9,11 @@ import { Intent } from "@/types/agent";
 
 /**
  * Build the complete prompt by appending intent instructions if intents exist
+ *
+ * @deprecated No longer called. Form intents are now classified per-turn by
+ * `classifyFormIntent` and the single matched intent is injected via
+ * `buildSelectedIntentSection` instead of embedding the full intent catalog
+ * in the base prompt. Kept temporarily for reference.
  */
 export function buildPromptWithIntents(basePrompt: string, intents?: Intent[]): string {
   // If no intents defined, return base prompt as-is
@@ -47,6 +52,11 @@ ${JSON.stringify(intents, null, 2)}`;
 /**
  * Parse intents from a prompt that was previously built with buildPromptWithIntents
  * This allows editing forms to extract and modify intents
+ *
+ * @deprecated No longer called. Form intents are now classified per-turn by
+ * `classifyFormIntent` and the single matched intent is injected via
+ * `buildSelectedIntentSection` instead of embedding the full intent catalog
+ * in the base prompt. Kept temporarily for reference.
  */
 export function parseIntentsFromPrompt(fullPrompt: string): {
   basePrompt: string;
@@ -92,4 +102,17 @@ export function parseIntentsFromPrompt(fullPrompt: string): {
       intents: []
     };
   }
+}
+
+/**
+ * Build a prompt section injecting ONLY the matched intent's guidance.
+ * Used when a separate classifier has already selected the intent, so the
+ * full intent catalog does not need to be injected every turn.
+ */
+export function buildSelectedIntentSection(intent: Intent): string {
+  return `
+
+You are responding under a matched intent. Follow this guidance exactly, including any tone or format it specifies:
+- Intent: ${intent.name}
+- Guidance: ${intent.prompt}`;
 }
