@@ -3,9 +3,10 @@ import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Uploads an image buffer to the configured GCS bucket and returns its public
- * URL. The object is made publicly readable via an object-level ACL
- * (predefinedAcl 'publicRead'), matching the org's shared fine-grained bucket
- * convention. Requires GCS_BUCKET_NAME plus credentials via GCS_CREDENTIALS_JSON
+ * URL. No object-level ACL is set — the shared bucket has uniform bucket-level
+ * access (UBLA) enabled, so public read must be granted at the bucket IAM level
+ * (allUsers -> Storage Object Viewer, ideally scoped to the intent-images/
+ * prefix). Requires GCS_BUCKET_NAME plus credentials via GCS_CREDENTIALS_JSON
  * (inline) or ADC / GOOGLE_APPLICATION_CREDENTIALS.
  */
 let storage: Storage | null = null;
@@ -58,7 +59,6 @@ export async function uploadImageToGcs(
   await file.save(buffer, {
     contentType: mimeType,
     resumable: false,
-    predefinedAcl: 'publicRead',
     metadata: { cacheControl: 'public, max-age=31536000' },
   });
 
