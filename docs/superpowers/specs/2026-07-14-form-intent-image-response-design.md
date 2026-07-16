@@ -189,7 +189,8 @@ POST /api/agents/[agentId]/upload-image   (multipart/form-data)
 > 이렇게 해야 버킷 경로를 agentId로 네임스페이스할 수 있고, 생성만 하고 배포하지 않은
 > 이미지의 orphan 도 줄어든다. 엔드포인트는 agent-scoped
 > `POST /api/agents/{agentId}/upload-image`, 버킷 객체 경로는
-> `intent-images/{agentId}/{uuid}.{ext}` 이다.
+> `intent-images/{env}/{agentId}/{uuid}.{ext}` 이다 (`env`는 `NEXT_PUBLIC_NODE_ENV`
+> 기준 `production`/`develop` — 공유 버킷에서 dev/prod 이미지를 분리, ainspace 컨벤션과 동일).
 
 ## 7. 컴포넌트별 변경
 

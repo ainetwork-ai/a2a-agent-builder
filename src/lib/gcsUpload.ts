@@ -51,8 +51,16 @@ export async function uploadImageToGcs(
     throw new Error('GCS_BUCKET_NAME is not configured');
   }
 
+  // Separate dev/prod images in the shared bucket, matching the ainspace
+  // convention (NEXT_PUBLIC_NODE_ENV -> production|develop). Falls back to
+  // NODE_ENV so a plain prod build still lands under production/.
+  const env =
+    (process.env.NEXT_PUBLIC_NODE_ENV || process.env.NODE_ENV) === 'production'
+      ? 'production'
+      : 'develop';
+
   const ext = EXT_BY_MIME[mimeType] || 'bin';
-  const objectName = `intent-images/${agentId}/${uuidv4()}.${ext}`;
+  const objectName = `intent-images/${env}/${agentId}/${uuidv4()}.${ext}`;
   const bucket = getStorage().bucket(bucketName);
   const file = bucket.file(objectName);
 
