@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AgentConfig } from '@/types/agent';
 import { setAgent } from '@/lib/agentStore';
-import { setIntents } from '@/lib/intentStore';
+import { getIntents, setIntents, intentImageUrls } from '@/lib/intentStore';
+import { deleteImagesByUrls } from '@/lib/gcsUpload';
 import { setSkillInstructions, extractSkillInstructions, toPublicSkills } from '@/lib/skillStore';
 import { ALLOWED_IMAGE_MIME_TYPES } from '@/lib/imageUploadValidation';
 import type { AgentCard } from "@a2a-js/sdk";
@@ -36,11 +37,20 @@ export async function POST(request: NextRequest) {
       skills: toPublicSkills(agentConfig.skills),
     };
 
-    // Store intents in separate redis key if provided
+    // Store intents in separate redis key if provided. On re-deploy, clean up
+    // any images that existed before but are no longer referenced.
     if (agentConfig.intents && agentConfig.intents.length > 0) {
       console.log(`📌 Storing ${agentConfig.intents.length} intents for agent ${agentId}...`);
+      const previousUrls = intentImageUrls(await getIntents(agentId));
       await setIntents(agentId, agentConfig.intents);
       console.log('✅ Intents stored successfully');
+
+      const keptUrls = new Set(intentImageUrls(agentConfig.intents));
+      const removedUrls = previousUrls.filter((url) => !keptUrls.has(url));
+      if (removedUrls.length > 0) {
+        console.log(`🗑️ Removing ${removedUrls.length} orphaned intent image(s)...`);
+        await deleteImagesByUrls(removedUrls);
+      }
     }
 
     // Store private skill instructions in their own redis key

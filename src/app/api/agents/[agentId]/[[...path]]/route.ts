@@ -16,7 +16,7 @@ import { classifyIntent } from '@/lib/intentClassifier';
 import { getBaseUrl } from '@/lib/url';
 import { autoEvolveAfterConversation } from '@/lib/thinkingEvolution';
 import { callLLM } from '@/lib/llmManager';
-import { getIntents } from '@/lib/intentStore';
+import { getIntents, deleteIntents } from '@/lib/intentStore';
 import { buildSelectedIntentSection } from '@/lib/promptBuilder';
 import { classifyFormIntent } from '@/lib/formIntentClassifier';
 import { getSentImageIntents, markImageIntentSent } from '@/lib/imageSentStore';
@@ -686,6 +686,8 @@ export async function DELETE(
     }
 
     await deleteAgent(agentId);
+    // Also drop the agent's intents and their uploaded images (best-effort).
+    await deleteIntents(agentId);
     console.log('✅ Agent deleted successfully:', agentId);
     return NextResponse.json({ success: true, agentId });
   } catch (error) {

@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
  * Uploads an image buffer to the configured GCS bucket and returns its public
  * URL. No object-level ACL is set — the shared bucket has uniform bucket-level
  * access (UBLA) enabled, so public read must be granted at the bucket IAM level
- * (allUsers -> Storage Object Viewer, ideally scoped to the intent-images/
+ * (allUsers -> Storage Object Viewer, ideally scoped to the {env}/intent-images/
  * prefix). Requires GCS_BUCKET_NAME plus credentials via GCS_CREDENTIALS_JSON
  * (inline) or ADC / GOOGLE_APPLICATION_CREDENTIALS.
  */
@@ -56,6 +56,22 @@ const EXT_BY_MIME: Record<string, string> = {
   'image/gif': 'gif',
 };
 
+// Shared-bucket env segment (matches the ainspace convention): production
+// images live under production/, everything else under develop/.
+function resolveEnv(): string {
+  return (process.env.NEXT_PUBLIC_NODE_ENV || process.env.NODE_ENV) === 'production'
+    ? 'production'
+    : 'develop';
+}
+
+// Extracts the GCS object name from a public storage URL, or null if the URL
+// does not point at the configured bucket.
+function objectNameFromUrl(url: string, bucketName: string): string | null {
+  const prefix = `https://storage.googleapis.com/${bucketName}/`;
+  if (!url.startsWith(prefix)) return null;
+  return decodeURIComponent(url.slice(prefix.length));
+}
+
 export async function uploadImageToGcs(
   buffer: Buffer,
   mimeType: string,
@@ -66,16 +82,8 @@ export async function uploadImageToGcs(
     throw new Error('GCS_BUCKET_NAME is not configured');
   }
 
-  // Separate dev/prod images in the shared bucket, matching the ainspace
-  // convention (NEXT_PUBLIC_NODE_ENV -> production|develop). Falls back to
-  // NODE_ENV so a plain prod build still lands under production/.
-  const env =
-    (process.env.NEXT_PUBLIC_NODE_ENV || process.env.NODE_ENV) === 'production'
-      ? 'production'
-      : 'develop';
-
   const ext = EXT_BY_MIME[mimeType] || 'bin';
-  const objectName = `intent-images/${env}/${agentId}/${uuidv4()}.${ext}`;
+  const objectName = `${resolveEnv()}/intent-images/${agentId}/${uuidv4()}.${ext}`;
   const bucket = getStorage().bucket(bucketName);
   const file = bucket.file(objectName);
 
@@ -87,4 +95,44 @@ export async function uploadImageToGcs(
 
   const url = `https://storage.googleapis.com/${bucketName}/${objectName}`;
   return { url, mimeType };
+}
+
+/**
+ * Best-effort deletion of specific images by their public URL. Used when an
+ * intent edit drops one or more images. Never throws — cleanup failures are
+ * logged so they cannot break the calling edit/deploy request.
+ */
+export async function deleteImagesByUrls(urls: string[]): Promise<void> {
+  const bucketName = process.env.GCS_BUCKET_NAME;
+  if (!bucketName || urls.length === 0) return;
+  const bucket = getStorage().bucket(bucketName);
+  await Promise.all(
+    urls.map(async (url) => {
+      const objectName = objectNameFromUrl(url, bucketName);
+      if (!objectName) {
+        console.warn(`[gcs] skip delete; URL not in bucket: ${url}`);
+        return;
+      }
+      try {
+        await bucket.file(objectName).delete({ ignoreNotFound: true });
+      } catch (err) {
+        console.error(`[gcs] failed to delete ${objectName}:`, err);
+      }
+    })
+  );
+}
+
+/**
+ * Best-effort deletion of every image under an agent's prefix (current env).
+ * Used when an agent and all its intents are removed. Never throws.
+ */
+export async function deleteAgentImages(agentId: string): Promise<void> {
+  const bucketName = process.env.GCS_BUCKET_NAME;
+  if (!bucketName) return;
+  const prefix = `${resolveEnv()}/intent-images/${agentId}/`;
+  try {
+    await getStorage().bucket(bucketName).deleteFiles({ prefix, force: true });
+  } catch (err) {
+    console.error(`[gcs] failed to delete prefix ${prefix}:`, err);
+  }
 }

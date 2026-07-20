@@ -1,5 +1,6 @@
 import { redis } from "./redis";
 import { Intent } from "@/types/agent";
+import { deleteAgentImages } from "./gcsUpload";
 
 /**
  * Intent Storage Module
@@ -43,6 +44,15 @@ export async function setIntents(agentId: string, intents: Intent[]): Promise<vo
 export async function deleteIntents(agentId: string): Promise<void> {
   const key = getIntentKey(agentId);
   await redis.del(key);
+  // Best-effort: also remove the agent's uploaded intent images from GCS.
+  await deleteAgentImages(agentId);
+}
+
+/**
+ * Collect every image URL referenced across a set of intents.
+ */
+export function intentImageUrls(intents: Intent[]): string[] {
+  return intents.flatMap((intent) => (intent.images ?? []).map((img) => img.url));
 }
 
 /**
