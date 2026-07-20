@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAgent, setAgent } from '@/lib/agentStore';
-import { setIntents } from '@/lib/intentStore';
+import { getIntents, setIntents, intentImageUrls } from '@/lib/intentStore';
+import { deleteImagesByUrls } from '@/lib/gcsUpload';
 import { Skill, Intent } from '@/types/agent';
 import { setSkillInstructions, extractSkillInstructions, toPublicSkills } from '@/lib/skillStore';
 
@@ -43,8 +44,17 @@ export async function PUT(
     // Update intents in separate Redis key if provided
     if (intents && Array.isArray(intents)) {
       console.log(`📌 Updating ${intents.length} intents for agent ${agentId}...`);
+      const previousUrls = intentImageUrls(await getIntents(agentId));
       await setIntents(agentId, intents as Intent[]);
       console.log('✅ Intents updated successfully');
+
+      // Best-effort cleanup: remove images that were dropped in this edit.
+      const keptUrls = new Set(intentImageUrls(intents as Intent[]));
+      const removedUrls = previousUrls.filter((url) => !keptUrls.has(url));
+      if (removedUrls.length > 0) {
+        console.log(`🗑️ Removing ${removedUrls.length} orphaned intent image(s)...`);
+        await deleteImagesByUrls(removedUrls);
+      }
     }
 
     // Build and persist the private skill-instructions map
