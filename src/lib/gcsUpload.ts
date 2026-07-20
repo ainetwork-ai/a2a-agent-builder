@@ -9,13 +9,28 @@ import { v4 as uuidv4 } from 'uuid';
  * prefix). Requires GCS_BUCKET_NAME plus credentials via GCS_CREDENTIALS_JSON
  * (inline) or ADC / GOOGLE_APPLICATION_CREDENTIALS.
  */
+/**
+ * Removes a single pair of matching wrapping quotes from an env value. Docker's
+ * `--env-file` passes values literally (quotes are NOT stripped), so a
+ * shell-friendly `GCS_CREDENTIALS_JSON='{...}'` arrives with the quotes intact.
+ */
+function stripWrappingQuotes(value?: string): string | undefined {
+  if (!value) return value;
+  const first = value[0];
+  const last = value[value.length - 1];
+  if (value.length >= 2 && (first === "'" || first === '"') && last === first) {
+    return value.slice(1, -1).trim();
+  }
+  return value;
+}
+
 let storage: Storage | null = null;
 function getStorage(): Storage {
   if (!storage) {
     // Inline credentials (raw JSON or base64-encoded JSON) take precedence for
     // environments where a key file path is impractical (e.g. serverless).
     // Falls back to ADC / GOOGLE_APPLICATION_CREDENTIALS file path otherwise.
-    const inline = process.env.GCS_CREDENTIALS_JSON?.trim();
+    const inline = stripWrappingQuotes(process.env.GCS_CREDENTIALS_JSON?.trim());
     if (inline) {
       let credentials: { project_id?: string };
       try {
