@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
  * Uploads an image buffer to the configured GCS bucket and returns its public
  * URL. No object-level ACL is set — the shared bucket has uniform bucket-level
  * access (UBLA) enabled, so public read must be granted at the bucket IAM level
- * (allUsers -> Storage Object Viewer, ideally scoped to the intent-images/
+ * (allUsers -> Storage Object Viewer, ideally scoped to the {env}/intent-images/
  * prefix). Requires GCS_BUCKET_NAME plus credentials via GCS_CREDENTIALS_JSON
  * (inline) or ADC / GOOGLE_APPLICATION_CREDENTIALS.
  */
@@ -75,7 +75,7 @@ export async function uploadImageToGcs(
       : 'develop';
 
   const ext = EXT_BY_MIME[mimeType] || 'bin';
-  const objectName = `intent-images/${env}/${agentId}/${uuidv4()}.${ext}`;
+  const objectName = `${env}/intent-images/${agentId}/${uuidv4()}.${ext}`;
   const bucket = getStorage().bucket(bucketName);
   const file = bucket.file(objectName);
 
