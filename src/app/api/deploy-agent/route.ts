@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AgentConfig } from '@/types/agent';
 import { setAgent } from '@/lib/agentStore';
-import { setIntents } from '@/lib/intentStore';
+import { getIntents, setIntents, intentImageUrls } from '@/lib/intentStore';
+import { deleteImagesByUrls } from '@/lib/gcsUpload';
+import { setSkillInstructions, extractSkillInstructions, toPublicSkills } from '@/lib/skillStore';
+import { ALLOWED_IMAGE_MIME_TYPES } from '@/lib/imageUploadValidation';
 import type { AgentCard } from "@a2a-js/sdk";
 
 export async function POST(request: NextRequest) {
@@ -13,6 +16,14 @@ export async function POST(request: NextRequest) {
 
     console.log('🚀 Deploying agent:', agentId, 'Creator:', creatorAddress);
 
+    // Private instructions map: { skillId: instructions } — never on the card.
+    const skillInstructions = extractSkillInstructions(agentConfig.skills);
+
+    const hasIntentImages = (agentConfig.intents || []).some(i => (i.images?.length ?? 0) > 0);
+    const outputModes = hasIntentImages
+      ? Array.from(new Set([...(agentConfig.defaultOutputModes || ['text']), ...ALLOWED_IMAGE_MIME_TYPES]))
+      : (agentConfig.defaultOutputModes || ['text']);
+
     const agentCard: AgentCard = {
       name: agentConfig.name,
       description: agentConfig.description,
@@ -21,16 +32,29 @@ export async function POST(request: NextRequest) {
       url: agentConfig.url,
       capabilities: agentConfig.capabilities,
       defaultInputModes: agentConfig.defaultInputModes,
-      defaultOutputModes: agentConfig.defaultOutputModes,
-      skills: agentConfig.skills,
+      defaultOutputModes: outputModes,
+      // Strip instructions — the public card keeps only id/name/description/tags.
+      skills: toPublicSkills(agentConfig.skills),
     };
 
-    // Store intents in separate redis key if provided
+    // Store intents in separate redis key if provided. On re-deploy, clean up
+    // any images that existed before but are no longer referenced.
     if (agentConfig.intents && agentConfig.intents.length > 0) {
       console.log(`📌 Storing ${agentConfig.intents.length} intents for agent ${agentId}...`);
+      const previousUrls = intentImageUrls(await getIntents(agentId));
       await setIntents(agentId, agentConfig.intents);
       console.log('✅ Intents stored successfully');
+
+      const keptUrls = new Set(intentImageUrls(agentConfig.intents));
+      const removedUrls = previousUrls.filter((url) => !keptUrls.has(url));
+      if (removedUrls.length > 0) {
+        console.log(`🗑️ Removing ${removedUrls.length} orphaned intent image(s)...`);
+        await deleteImagesByUrls(removedUrls);
+      }
     }
+
+    // Store private skill instructions in their own redis key
+    await setSkillInstructions(agentId, skillInstructions);
 
     // Store agent configuration in Redis
     // The executor will be created on-demand when the agent receives a message
@@ -40,6 +64,7 @@ export async function POST(request: NextRequest) {
       modelProvider: agentConfig.modelProvider,
       modelName: agentConfig.modelName,
       creator: creatorAddress,
+      useSkills: agentConfig.useSkills ?? Object.keys(skillInstructions).length > 0,
     });
 
     console.log('✅ Agent deployed successfully:', agentId);

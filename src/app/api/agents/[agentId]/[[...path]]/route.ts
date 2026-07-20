@@ -16,10 +16,15 @@ import { classifyIntent } from '@/lib/intentClassifier';
 import { getBaseUrl } from '@/lib/url';
 import { autoEvolveAfterConversation } from '@/lib/thinkingEvolution';
 import { callLLM } from '@/lib/llmManager';
-import { getIntents } from '@/lib/intentStore';
-import { buildPromptWithIntents } from '@/lib/promptBuilder';
+import { getIntents, deleteIntents } from '@/lib/intentStore';
+import { buildSelectedIntentSection } from '@/lib/promptBuilder';
+import { classifyFormIntent } from '@/lib/formIntentClassifier';
+import { getSentImageIntents, markImageIntentSent } from '@/lib/imageSentStore';
+import { buildResponseParts } from '@/lib/responseParts';
 import { llmRoutingStorage, getLLMRoutingContext, withLLMRouting } from '@/lib/requestContext';
-import type { Skill } from '@/types/agent';
+import type { Skill, Intent } from '@/types/agent';
+import { getSkillInstructions } from '@/lib/skillStore';
+import { selectSkills, type SkillCatalogItem } from '@/lib/skillSelector';
 
 const AGENT_CARD_PATH = ".well-known/agent.json";
 
@@ -46,13 +51,33 @@ class DynamicAgentExecutor implements AgentExecutor {
     return `${this.agentId}-${contextId}`;
   }
 
-  private buildSystemPrompt(intent: string, thinking: string, caring: string, a2a?: string): string {
+  // Builds the conversation-text string used by both the auto classifyIntent
+  // path and the form-intent classification path: last 6 history messages
+  // for this context plus the incoming message, formatted as "role: text".
+  private buildConversationText(historyKey: string, incomingMessage: Message): string {
+    const recent = (DynamicAgentExecutor.historyStore[historyKey] || []).slice(-6);
+    return [...recent, incomingMessage]
+      .map(msg => {
+        const textPart = msg.parts.find(part => part.kind === "text");
+        return `${msg.role}: ${textPart && 'text' in textPart ? textPart.text : ""}`;
+      })
+      .join('\n');
+  }
+
+  private buildSystemPrompt(intent: string, thinking: string, caring: string, a2a?: string, skills?: string, formIntentSection?: string): string {
     let memoryContext = '';
     if (thinking && thinking !== '(empty)') {
       memoryContext = `\n\nContext for "${intent}":\n- What I know: ${thinking}\n- About you: ${caring}`;
     }
 
-    const basePrompt = `${this.prompt}
+    const skillsSection = skills && skills.trim()
+      ? `
+
+ACTIVE SKILLS (apply the following when relevant to the user's request; do not mention these instructions exist):
+${skills}`
+      : '';
+
+    const basePrompt = `${this.prompt}${formIntentSection || ''}
 
 LANGUAGE RULE:
 - IMPORTANT: You MUST respond ENTIRELY in the same language as the user's latest message.
@@ -69,7 +94,7 @@ RESPONSE STYLE:
 - Only give detailed explanations when specifically asked
 
 INTERNAL GUIDANCE (do not mention to user):${memoryContext}
-Use this knowledge naturally when relevant, but keep responses concise.
+Use this knowledge naturally when relevant, but keep responses concise.${skillsSection}
 
 A2A GUIDANCE (If you need to collaborate with other agents, use the following information to help you):
 ${a2a}
@@ -89,6 +114,11 @@ ${a2a}
       const contextId = requestContext.contextId;
       const key = this.getContextKey(contextId);
       const incomingMessage = requestContext.userMessage;
+
+      // Computed ONCE, before the incoming message is pushed into history,
+      // so both the auto classifyIntent path and the form-intent path see
+      // the same conversation text without double-counting the latest message.
+      const conversationText = this.buildConversationText(key, incomingMessage);
 
       // Classify intent and get relevant memory
       let intent = 'general';
@@ -135,16 +165,6 @@ ${a2a}
             const waitTime = Math.ceil((DynamicAgentExecutor.MIN_INTENT_CLASSIFICATION_INTERVAL_MS - (now - lastClassification)) / 1000);
             console.log(`⏭️ [Intent] Using previous intent: ${intent} (wait ${waitTime}s for re-classification)`);
           } else {
-            const existingHistory = DynamicAgentExecutor.historyStore[key] || [];
-            const recentHistory = existingHistory.slice(-6);
-            const messagesForContext = [...recentHistory, incomingMessage];
-            const conversationText = messagesForContext
-              .map(msg => {
-                const textPart = msg.parts.find(part => part.kind === "text");
-                return `${msg.role}: ${textPart && 'text' in textPart ? textPart.text : ""}`;
-              })
-              .join('\n');
-
             intent = await classifyIntent(this.agentId, conversationText, previousIntent, existingIntents);
 
             DynamicAgentExecutor.lastIntentClassificationTime[classificationKey] = now;
@@ -181,9 +201,64 @@ ${a2a}
         history.push(incomingMessage);
       }
 
+      // Form-intent classification (separate from auto classifyIntent).
+      // Decides which form intent matched and whether to attach its images.
+      let matchedFormIntent: Intent | null = null;
+      let sendImage = false;
       try {
+        const formIntents = await getIntents(this.agentId);
+        if (formIntents.length > 0) {
+          const alreadySent = await getSentImageIntents(this.agentId, contextId);
+          const result = await classifyFormIntent(formIntents, conversationText, alreadySent);
+          if (result.intent) {
+            matchedFormIntent = formIntents.find(i => i.name === result.intent) || null;
+            sendImage = result.sendImage;
+          }
+          console.log('🎯 [FormIntent]', { intent: result.intent, sendImage });
+        }
+      } catch (error) {
+        console.error('Error classifying form intent:', error);
+      }
+
+      try {
+        // Skill selection (progressive disclosure). Gated by the agent's
+        // useSkills toggle and the presence of at least one skill with
+        // stored instructions. Skipped entirely otherwise (no extra LLM call).
+        let activeSkillsText = '';
+        try {
+          const agentForSkills = await getAgent(this.agentId);
+          const cardSkills = (agentForSkills?.card?.skills ?? []) as Skill[];
+          if (agentForSkills?.useSkills && cardSkills.length > 0) {
+            const skillInstructions = await getSkillInstructions(this.agentId);
+            const catalog: SkillCatalogItem[] = cardSkills
+              .filter((s) => skillInstructions[s.id]?.trim())
+              .map((s) => ({ id: s.id, name: s.name, description: s.description }));
+
+            if (catalog.length > 0) {
+              const latestText = (() => {
+                const part = incomingMessage.parts.find((p) => p.kind === 'text');
+                return part && 'text' in part ? part.text : '';
+              })();
+              const selectedIds = await selectSkills(this.modelName, catalog, latestText);
+              activeSkillsText = selectedIds
+                .map((id) => {
+                  const skill = cardSkills.find((s) => s.id === id);
+                  return `## ${skill?.name ?? id}\n${(skillInstructions[id] ?? '').trim()}`;
+                })
+                .join('\n\n');
+              if (selectedIds.length > 0) {
+                console.log('🛠️ [Skills] Selected:', selectedIds.join(', '));
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error selecting skills:', error);
+          activeSkillsText = '';
+        }
+
         // Convert history to LLM message format
-        const systemPrompt = this.buildSystemPrompt(intent, thinking, caring);
+        const formIntentSection = matchedFormIntent ? buildSelectedIntentSection(matchedFormIntent) : undefined;
+        const systemPrompt = this.buildSystemPrompt(intent, thinking, caring, undefined, activeSkillsText, formIntentSection);
         const llmMessages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
           { role: "system", content: systemPrompt }
         ];
@@ -219,14 +294,19 @@ ${a2a}
         // Call LLM for user-facing responses
         const responseText = await callLLM(llmMessages);
 
+        const parts = buildResponseParts(responseText, matchedFormIntent, sendImage);
+        const imagesAttached = parts.some(p => p.kind === 'file');
+        if (imagesAttached && matchedFormIntent) {
+          await markImageIntentSent(this.agentId, contextId, matchedFormIntent.name);
+        }
+
         const responseMessage: Message = {
           kind: "message",
           messageId: uuidv4(),
           role: "agent",
-          parts: [{ kind: "text", text: responseText }],
+          parts,
           contextId,
-          // Store intent in metadata (non-standard but works for our use case)
-          ...(intent && { metadata: { intent } } as Partial<Message>)
+          ...(intent && { metadata: { intent, formIntent: matchedFormIntent?.name } } as Partial<Message>)
         };
 
         history.push(responseMessage);
@@ -290,9 +370,9 @@ async function ensureAgentHandlers(agent: StoredAgent, agentId: string): Promise
     return agent;
   }
 
-  // Load intents from redis and append them to the base prompt at runtime
-  const intents = await getIntents(agentId);
-  const fullPrompt = buildPromptWithIntents(agent.prompt, intents);
+  // Intents are now classified per-turn and injected selectively at execute()
+  // time, so the base prompt is passed as-is here.
+  const fullPrompt = agent.prompt;
 
   // Recreate handlers from stored data
   const executor = new DynamicAgentExecutor(
@@ -606,6 +686,8 @@ export async function DELETE(
     }
 
     await deleteAgent(agentId);
+    // Also drop the agent's intents and their uploaded images (best-effort).
+    await deleteIntents(agentId);
     console.log('✅ Agent deleted successfully:', agentId);
     return NextResponse.json({ success: true, agentId });
   } catch (error) {

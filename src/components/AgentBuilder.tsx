@@ -12,6 +12,7 @@ import { getDisplayModelName } from '@/lib/utils/modelUtils';
 import { CopyButton } from './CopyButton';
 import { useToast } from '@/contexts/ToastContext';
 import { safeFetch } from '@/lib/utils/safeFetch';
+import { resolveIntentImages } from '@/lib/uploadIntentImages';
 import { Address } from 'viem';
 import HolderModal from './HolderModal';
 
@@ -54,6 +55,7 @@ export default function AgentBuilder() {
     modelProvider: 'google',
     modelName: 'gemma-3-27b-it',
     intents: [],
+    useSkills: false,
   });
   const [generatedForm, setGeneratedForm] = useState<AgentBuilderForm | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -224,6 +226,7 @@ export default function AgentBuilder() {
       intents: agentData.intents,
       modelProvider: agentData.modelProvider,
       modelName: agentData.modelName,
+      useSkills: agentData.useSkills ?? agentData.skills.some((s) => s.instructions?.trim()),
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -290,18 +293,24 @@ export default function AgentBuilder() {
 
     setDeployingAgentId(agent.id);
     try {
+      // Upload any pending intent images now that the agentId is known, and
+      // replace them with their persisted bucket URLs before deploying.
+      const resolvedIntents = await resolveIntentImages(agent.id, agent.intents);
+      const agentToDeploy: AgentConfig = { ...agent, intents: resolvedIntents };
+
       await safeFetch('/api/deploy-agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          agentConfig: agent,
+          agentConfig: agentToDeploy,
           creatorAddress: address,
         }),
       });
 
-      // Update deployed status
+      // Update deployed status and persist resolved (uploaded) images in state
+      // so a subsequent deploy does not re-upload them.
       setAgents(prev => prev.map(a =>
-        a.id === agent.id ? { ...a, deployed: true } : a
+        a.id === agent.id ? { ...agentToDeploy, deployed: true } : a
       ));
 
       const agentCardUrl = `${agent.url}/.well-known/agent.json`;

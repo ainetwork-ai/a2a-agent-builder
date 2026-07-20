@@ -6,6 +6,7 @@ import { useAccount } from 'wagmi';
 import { AgentForm } from './AgentForm';
 import { useToast } from '@/contexts/ToastContext';
 import { safeFetch } from '@/lib/utils/safeFetch';
+import { resolveIntentImages } from '@/lib/uploadIntentImages';
 
 interface EditAgentModalProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ interface EditAgentModalProps {
     modelProvider: string;
     modelName: string;
     prompt: string;
+    useSkills?: boolean;
   };
   onSuccess: () => void;
 }
@@ -36,6 +38,7 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
     modelProvider: agent.modelProvider as 'google' | 'openai' | 'anthropic',
     modelName: agent.modelName,
     prompt: agent.prompt,
+    useSkills: agent.useSkills ?? false,
   });
 
   const [isSaving, setIsSaving] = useState(false);
@@ -51,6 +54,7 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
         modelProvider: agent.modelProvider as 'google' | 'openai' | 'anthropic',
         modelName: agent.modelName,
         prompt: agent.prompt,
+        useSkills: agent.useSkills ?? false,
       });
     }
   }, [isOpen, agent.id]); // agent 전체 대신 agent.id만 의존성으로
@@ -80,11 +84,16 @@ export default function EditAgentModal({ isOpen, onClose, agent, onSuccess }: Ed
 
     setIsSaving(true);
     try {
+      // Upload any newly-selected intent images and replace them with their
+      // persisted bucket URLs; already-uploaded images pass through unchanged.
+      const resolvedIntents = await resolveIntentImages(agent.id, data.intents);
+
       await safeFetch(`/api/agents/${agent.id}/edit`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...data,
+          intents: resolvedIntents,
           address,
         }),
       });

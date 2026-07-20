@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { AgentBuilderForm, Skill, Intent } from '@/types/agent';
+import React, { useState, useEffect, useRef } from 'react';
+import { AgentBuilderForm, Skill, Intent, IntentImage } from '@/types/agent';
+import { FormIntentImage } from '@/lib/uploadIntentImages';
+import { validateImageUpload } from '@/lib/imageUploadValidation';
 import { getDisplayModelName } from '@/lib/utils/modelUtils';
 
 interface AgentFormProps {
@@ -22,9 +24,21 @@ export function AgentForm({ initialData, onSubmit, onCancel, onAutoComplete, isS
   const [tagInputs, setTagInputs] = useState<Record<string, string>>({});
   const [focusedSkillId, setFocusedSkillId] = useState<string | null>(null);
 
+  // Track blob object URLs created for pending image previews so they can be
+  // revoked on removal/unmount and avoid leaks.
+  const objectUrlsRef = useRef<Set<string>>(new Set());
+
   useEffect(() => {
     setFormData(initialData);
   }, [initialData]);
+
+  useEffect(() => {
+    const urls = objectUrlsRef.current;
+    return () => {
+      urls.forEach((u) => URL.revokeObjectURL(u));
+      urls.clear();
+    };
+  }, []);
 
   const handleSkillChange = (skillId: string, field: keyof Skill, value: string | string[]) => {
     setFormData(prev => ({
@@ -79,7 +93,8 @@ export function AgentForm({ initialData, onSubmit, onCancel, onAutoComplete, isS
       id: `skill-${Date.now()}`,
       name: '',
       description: '',
-      tags: []
+      tags: [],
+      instructions: '',
     };
     setFormData(prev => ({ ...prev, skills: [...prev.skills, newSkill] }));
   };
@@ -109,9 +124,54 @@ export function AgentForm({ initialData, onSubmit, onCancel, onAutoComplete, isS
   const handleIntentChange = (index: number, field: keyof Intent, value: string) => {
     setFormData(prev => ({
       ...prev,
-      intents: (prev.intents || []).map((intent, i) => 
+      intents: (prev.intents || []).map((intent, i) =>
         i === index ? { ...intent, [field]: value } : intent
       )
+    }));
+  };
+
+  const MAX_INTENT_IMAGES = 3;
+
+  // Select an image for an intent WITHOUT uploading — the File is held locally
+  // and previewed via a blob object URL. Pending files are uploaded at
+  // deploy/edit time (when the agentId is known) via resolveIntentImages.
+  const addIntentImage = (index: number, file: File) => {
+    const current = (formData.intents || [])[index]?.images || [];
+    if (current.length >= MAX_INTENT_IMAGES) {
+      alert(`인텐트당 최대 ${MAX_INTENT_IMAGES}장까지 가능합니다.`);
+      return;
+    }
+    const check = validateImageUpload(file.type, file.size);
+    if (!check.ok) {
+      alert(`이미지 오류: ${check.error}`);
+      return;
+    }
+    const previewUrl = URL.createObjectURL(file);
+    objectUrlsRef.current.add(previewUrl);
+    const pending: FormIntentImage = { url: previewUrl, mimeType: file.type, file };
+    setFormData(prev => ({
+      ...prev,
+      intents: (prev.intents || []).map((it, i) =>
+        i === index
+          ? { ...it, images: [...((it.images as FormIntentImage[]) || []), pending] as IntentImage[] }
+          : it
+      ),
+    }));
+  };
+
+  const removeIntentImage = (index: number, imgIdx: number) => {
+    const removed = ((formData.intents || [])[index]?.images as FormIntentImage[] | undefined)?.[imgIdx];
+    if (removed?.file && removed.url.startsWith('blob:')) {
+      URL.revokeObjectURL(removed.url);
+      objectUrlsRef.current.delete(removed.url);
+    }
+    setFormData(prev => ({
+      ...prev,
+      intents: (prev.intents || []).map((it, i) =>
+        i === index
+          ? { ...it, images: (it.images || []).filter((_, j) => j !== imgIdx) }
+          : it
+      ),
     }));
   };
 
@@ -190,11 +250,22 @@ export function AgentForm({ initialData, onSubmit, onCancel, onAutoComplete, isS
       {/* Skills Section */}
       {/* Skills Section */}
       <div>
-        <div className="mb-4">
-          <label className="block text-lg font-bold text-gray-900">Skills</label>
-          <p className="text-sm text-gray-500 mt-1">
-            Set up your agent&apos;s capabilities and tools
-          </p>
+        <div className="mb-4 flex items-start justify-between gap-4">
+          <div>
+            <label className="block text-lg font-bold text-gray-900">Skills</label>
+            <p className="text-sm text-gray-500 mt-1">
+              Set up your agent&apos;s capabilities and tools
+            </p>
+          </div>
+          <label className="flex items-center gap-2 mt-1 shrink-0 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={formData.useSkills ?? false}
+              onChange={(e) => setFormData({ ...formData, useSkills: e.target.checked })}
+              className="h-4 w-4 accent-purple-600"
+            />
+            <span className="text-sm font-medium text-gray-700">Use skills in replies</span>
+          </label>
         </div>
 
         <div className="space-y-3 mb-4">
@@ -310,6 +381,24 @@ export function AgentForm({ initialData, onSubmit, onCancel, onAutoComplete, isS
                     />
                   </div>
                 </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1.5">
+                    Instructions
+                  </label>
+                  <p className="text-[11px] text-gray-400 mb-1.5">
+                    Loaded into the agent only when this skill is relevant to the user&apos;s message.
+                  </p>
+                  <textarea
+                    value={skill.instructions || ''}
+                    onChange={(e) => handleSkillChange(skill.id, 'instructions', e.target.value)}
+                    onFocus={(e) => (e.target.rows = 6)}
+                    onBlur={(e) => (e.target.rows = 3)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none bg-gray-50 focus:bg-white transition-all text-base"
+                    rows={3}
+                    placeholder="Concrete guidance/knowledge the agent applies when this skill is selected..."
+                  />
+                </div>
               </div>
             </div>
           ))}
@@ -413,6 +502,36 @@ export function AgentForm({ initialData, onSubmit, onCancel, onAutoComplete, isS
                     rows={3}
                     placeholder="What the agent should know or say..."
                   />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1.5">
+                    Images (max 3)
+                  </label>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {(intent.images || []).map((img, imgIdx) => (
+                      <div key={imgIdx} className="relative">
+                        <img src={img.url} alt="" className="w-16 h-16 object-cover rounded-lg border border-gray-200" />
+                        <button
+                          type="button"
+                          onClick={() => removeIntentImage(idx, imgIdx)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center"
+                        >×</button>
+                      </div>
+                    ))}
+                  </div>
+                  {(intent.images || []).length < 3 && (
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) addIntentImage(idx, f);
+                        e.target.value = '';
+                      }}
+                      className="text-sm"
+                    />
+                  )}
                 </div>
               </div>
             </div>
