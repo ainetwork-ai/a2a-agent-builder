@@ -15,6 +15,7 @@ import { safeFetch } from '@/lib/utils/safeFetch';
 import { resolveIntentImages } from '@/lib/uploadIntentImages';
 import { Address } from 'viem';
 import HolderModal from './HolderModal';
+import LoadingModal from './LoadingModal';
 
 type BuilderMode = 'ai' | 'manual';
 
@@ -62,6 +63,7 @@ export default function AgentBuilder() {
   const [deployedAgent, setDeployedAgent] = useState<{ url: string; cardUrl: string } | null>(null);
   const [deployingAgentId, setDeployingAgentId] = useState<string | null>(null);
   const [isHolderModalOpen, setIsHolderModalOpen] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchModelConfig = async () => {
@@ -86,6 +88,7 @@ export default function AgentBuilder() {
       return true;
     }
     try {
+      setIsLoading(true)
       if (!userAddress) {
         throw new Error("Wallet connection has been disconnected. Please reconnect wallet.")
      }
@@ -102,10 +105,12 @@ export default function AgentBuilder() {
         });
         const result = await data.json()
         const isHolder = result.results.some((value: { isHolder: boolean; }) => value.isHolder === true)
-        return isHolder
+      setIsLoading(false)
+      return isHolder
     } catch (error) {
         console.error("isHolder API Error", error)
-    }
+        setIsLoading(false)
+      }
     
 }
 
@@ -437,7 +442,7 @@ export default function AgentBuilder() {
                         initialData={generatedForm}
                         onSubmit={(data) => createAgent(data)}
                         onCancel={() => setGeneratedForm(null)}
-                        isSubmitting={!!deployingAgentId}
+                        isSubmitting={!!deployingAgentId || isLoading}
                         submitLabel="Create"
                       />
                     </div>
@@ -453,7 +458,7 @@ export default function AgentBuilder() {
                   initialData={manualFormData}
                   onSubmit={(data) => createAgent(data)}
                   onAutoComplete={autoCompleteManualForm}
-                  isSubmitting={!!deployingAgentId}
+                  isSubmitting={!!deployingAgentId || isLoading}
                   isAutoCompleting={isGenerating}
                   submitLabel="Create"
                   showAutoComplete={true}
@@ -627,6 +632,7 @@ export default function AgentBuilder() {
           </div>
         </div>
       )}
+      <LoadingModal open={isLoading} title='Holder Checking...' message='are you ai network ecosystem holder?'/>
       <HolderModal open={isHolderModalOpen} onOpenChange={setIsHolderModalOpen}/>
     </div>
   );
