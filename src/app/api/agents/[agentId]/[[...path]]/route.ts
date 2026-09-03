@@ -31,6 +31,24 @@ const AGENT_CARD_PATH = ".well-known/agent.json";
 // Define DynamicAgentExecutor class before using it
 class DynamicAgentExecutor implements AgentExecutor {
   private static historyStore: Record<string, Message[]> = {};
+  // Max conversation messages replayed to the LLM (and retained) per context,
+  // NOT counting the seed at index 0. The whole bucket used to be resent on
+  // every turn with no bound, so a long-lived context grew the prompt without
+  // limit — latency and token cost climbed turn after turn. That is unbounded
+  // by construction here: `historyStore` is process memory with no expiry, so
+  // an on-prem container accumulates for its entire uptime.
+  //
+  // It bites hardest when one contextId is shared by many people. The exhibition
+  // kiosk is exactly that: AIN Teams keys the A2A contextId per (agent,
+  // workspace), so every visitor continues the previous visitor's context and
+  // this bucket collects the whole exhibition. Capping here bounds the damage
+  // from any caller; fixing who-gets-which-contextId is the AIN Teams side.
+  //
+  // Override with AGENT_MAX_HISTORY_MESSAGES; <= 0 restores the old unbounded
+  // behavior.
+  private static MAX_HISTORY_MESSAGES = Number(
+    process.env.AGENT_MAX_HISTORY_MESSAGES ?? 20
+  );
   private static lastEvolutionTime: Record<string, number> = {};
   private static MIN_EVOLUTION_INTERVAL_MS = 60000; // 60 seconds (1 minute)
   private static lastIntentClassificationTime: Record<string, number> = {};
@@ -49,6 +67,31 @@ class DynamicAgentExecutor implements AgentExecutor {
 
   private getContextKey(contextId: string): string {
     return `${this.agentId}-${contextId}`;
+  }
+
+  // Drop the oldest turns so at most MAX_HISTORY_MESSAGES remain after the seed.
+  //
+  // Mutates in place with splice rather than reassigning historyStore[key]:
+  // execute() holds a local reference to this array and pushes the agent reply
+  // into it later, so swapping the array out would send that reply to an
+  // orphaned copy and silently lose it from the transcript.
+  private static trimHistory(history: Message[]): void {
+    const max = DynamicAgentExecutor.MAX_HISTORY_MESSAGES;
+    // index 0 is the seed message, kept always — the bucket's existence check
+    // and buildConversationText both assume it stays put.
+    if (!Number.isFinite(max) || max <= 0 || history.length - 1 <= max) return;
+
+    let drop = history.length - 1 - max;
+    // Prefer opening the retained window on a user turn: the replay is built as
+    // system -> [window] and a leading assistant turn is rejected by some model
+    // APIs. If no user turn remains ahead, keep the plain count.
+    for (let i = 1 + drop; i < history.length; i++) {
+      if (history[i].role === "user") {
+        drop = i - 1;
+        break;
+      }
+    }
+    history.splice(1, drop);
   }
 
   // Builds the conversation-text string used by both the auto classifyIntent
@@ -200,6 +243,9 @@ ${a2a}
       if (incomingMessage) {
         history.push(incomingMessage);
       }
+      // Bound the bucket before anything reads it, so both the replay below and
+      // the retained array stay capped.
+      DynamicAgentExecutor.trimHistory(history);
 
       // Form-intent classification (separate from auto classifyIntent).
       // Decides which form intent matched and whether to attach its images.
