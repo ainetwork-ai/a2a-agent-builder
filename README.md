@@ -1,3 +1,7 @@
+# Retired: use Ainize Agent Builder
+
+This legacy app is no longer deployed. All production paths redirect to https://ainize.ai/agent/new?org=uncommon-gallery. Vercel deploys only the static retirement page; installation and the legacy Next.js build are disabled. The historical source below remains for reference and is excluded from deployment. Redis environment variables are no longer needed.
+
 # A2A Agent Builder
 
 A platform for building and deploying AI agents using the Agent-to-Agent (A2A) protocol. Create custom agents with different AI models and deploy them as A2A-compatible services.
