@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "",
+  "buildCommand": "",
+  "outputDirectory": "retired",
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "destination": "https://ainize.ai/agent/new?org=uncommon-gallery",
+      "permanent": true
+    }
+  ]
+}
